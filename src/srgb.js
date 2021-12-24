@@ -11,3 +11,23 @@ export function srgb_hex (a) {
   const b0 = b.length > 1 ? b : '0' + b;
   return '#' + r0 + g0 + b0;
 }
+
+/// Parse hex string into sRGB array, elements are within 0…1.
+export function srgb_from (hex) {
+  const offset = hex.substr (0, 1) == '#' ? 1 : 0;
+  if (hex.length - offset == 3)
+    {
+      const r = parseInt (hex.substr (offset + 0, 1), 16);
+      const g = parseInt (hex.substr (offset + 1, 1), 16);
+      const b = parseInt (hex.substr (offset + 2, 1), 16);
+      return [ ((r << 4) + r) / 255.0, ((g << 4) + g) / 255.0, ((b << 4) + b) / 255.0 ];
+    }
+  else if (hex.length - offset == 6)
+    {
+      const r = parseInt (hex.substr (offset + 0, 2), 16);
+      const g = parseInt (hex.substr (offset + 2, 2), 16);
+      const b = parseInt (hex.substr (offset + 4, 2), 16);
+      return [ r / 255.0, g / 255.0, b / 255.0 ];
+    }
+  return [ 0, 0, 0 ];
+}
