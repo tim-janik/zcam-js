@@ -12,22 +12,40 @@ export function srgb_hex (a) {
   return '#' + r0 + g0 + b0;
 }
 
-/// Parse hex string into sRGB array, elements are within 0…1.
-export function srgb_from (hex) {
-  const offset = hex.substr (0, 1) == '#' ? 1 : 0;
-  if (hex.length - offset == 3)
+/// Create sRGB from color string, integer or vector `[ 0…1, 0…1, 0…1 ]`
+export function srgb_from (srgb) {
+  if (Array.isArray (srgb))
+    return srgb;
+  if ('number' === typeof srgb) {
+    const r = ((srgb | 0) & 0xff0000) >> 16;
+    const g = ((srgb | 0) & 0xff00) >> 8;
+    const b = (srgb | 0) & 0xff;
+    return [r / 255.0, g / 255.0, b / 255.0];
+  }
+  const offset = srgb.substr (0, 1) == '#' ? 1 : 0;
+  if (srgb.length - offset >= 6)
     {
-      const r = parseInt (hex.substr (offset + 0, 1), 16);
-      const g = parseInt (hex.substr (offset + 1, 1), 16);
-      const b = parseInt (hex.substr (offset + 2, 1), 16);
-      return [ ((r << 4) + r) / 255.0, ((g << 4) + g) / 255.0, ((b << 4) + b) / 255.0 ];
+      const r = parseInt (srgb.substr (offset + 0, 2), 16);
+      const g = parseInt (srgb.substr (offset + 2, 2), 16);
+      const b = parseInt (srgb.substr (offset + 4, 2), 16);
+      const c = [ r / 255.0, g / 255.0, b / 255.0 ];
+      if (srgb.length - offset >= 8) {
+        const a = parseInt (srgb.substr (offset + 6, 2), 16);
+        c.push (a / 255.0);
+      }
+      return c;
     }
-  else if (hex.length - offset == 6)
+  if (srgb.length - offset >= 3)
     {
-      const r = parseInt (hex.substr (offset + 0, 2), 16);
-      const g = parseInt (hex.substr (offset + 2, 2), 16);
-      const b = parseInt (hex.substr (offset + 4, 2), 16);
-      return [ r / 255.0, g / 255.0, b / 255.0 ];
+      const r = parseInt (srgb.substr (offset + 0, 1), 16);
+      const g = parseInt (srgb.substr (offset + 1, 1), 16);
+      const b = parseInt (srgb.substr (offset + 2, 1), 16);
+      const c = [ ((r << 4) + r) / 255.0, ((g << 4) + g) / 255.0, ((b << 4) + b) / 255.0 ];
+      if (srgb.length - offset >= 4) {
+        const a = parseInt (srgb.substr (offset + 3, 1), 16);
+        c.push (((a << 4) + a) / 255.0);
+      }
+      return c;
     }
   return [ 0, 0, 0 ];
 }
