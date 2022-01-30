@@ -55,3 +55,16 @@ export function srgb_from (srgb) {
     }
   return [ 0, 0, 0 ];
 }
+
+// == Linear sRGB ==
+/// Convert sRGB channel value to linear RGB channel value (inverse companding)
+export function srgb_eotf (v) {
+  // https://en.wikipedia.org/wiki/SRGB#Transfer_function_(%22gamma%22)
+  return v <= 0.04045 ? v * (1.0 / 12.92) : ((v + 0.055) * (1.0 / 1.055)) ** 2.4;
+}
+
+/// Convert linear RGB channel value to sRGB channel value (inverse EOTF)
+export function srgb_companding (v) {
+  // http://www.brucelindbloom.com/Eqn_XYZ_to_RGB.html#Companding
+  return v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1.0 / 2.4) - 0.055;
+}
