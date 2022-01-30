@@ -18,7 +18,7 @@ export function srgb_hex (rgb) {
   return hex;
 }
 
-/// Create sRGB from color string, integer or vector `[ 0…1, 0…1, 0…1 ]`
+/// Create sRGB array from color string, integer or vector `[ 0…1, 0…1, 0…1 ]`
 export function srgb_from (srgb) {
   if (Array.isArray (srgb))
     return srgb;
@@ -67,4 +67,15 @@ export function srgb_eotf (v) {
 export function srgb_companding (v) {
   // http://www.brucelindbloom.com/Eqn_XYZ_to_RGB.html#Companding
   return v <= 0.0031308 ? v * 12.92 : 1.055 * v ** (1.0 / 2.4) - 0.055;
+}
+
+/// Convert sRGB array to linear RGB object via srgb_eotf()
+export function srgb_to_linear (srgb) {
+  const [r, g, b] = srgb_from (srgb);
+  return { r: srgb_eotf (r), g: srgb_eotf (g), b: srgb_eotf (b) };
+}
+
+/// Convert linear RGB object to companded sRGB array via srgb_companding()
+export function srgb_from_linear ({r, g, b}) {
+  return [srgb_companding (r), srgb_companding (g), srgb_companding (b)];
 }
