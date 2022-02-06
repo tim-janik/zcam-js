@@ -1,4 +1,6 @@
-/* Authors: Alexei Boronine, Bastien Dejean */
+/* MIT licensed, https://opensource.org/licenses/MIT
+ * Authors: Alexei Boronine, Bastien Dejean
+ */
 
 /* Matrices generated with the following algorithm:
 http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
