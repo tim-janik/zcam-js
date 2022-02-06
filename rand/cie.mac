@@ -46,7 +46,8 @@ M_P: matrix([X_r, X_g, X_b],
             [Z_r, Z_g, Z_b]);
 M_S: invert(M_P) . [X_w, Y_w, Z_w];
 
-M_RGB_XYZ: M_P * transpose(addcol(M_S, M_S, M_S));
+/* Construct XYZ/RGB matrixes and scale to Y=100 */
+M_RGB_XYZ: 100 * M_P * transpose(addcol(M_S, M_S, M_S));
 M_XYZ_RGB: invert(M_RGB_XYZ);
 
 /* Note that the standard defines these constants as decimals and
