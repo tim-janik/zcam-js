@@ -59,3 +59,39 @@ export function Jzazbz_from_srgb (srgb) {
 export function srgb_from_Jzazbz (Jzazbz) {
   return E.srgb_from_xyz (xyz_from_Jzazbz (Jzazbz));
 }
+
+// == Izazbz color space ==
+const Izazbz_ϵ = 3.7035226210190005e-11;
+
+/// Convert from absolute XYZ (D65/2°) to Izazbz color space.
+export function Izazbz_from_xyz ({ x: X, y: Y, z: Z }) {
+  const X_D65 = Jzazbz_b*X - (Jzazbz_b-1)*Z; // use Z in second term, wrong in ZCAM paper, right in Jzazbz, fix via inverse(ZCAM supplement)
+  const Y_D65 = Jzazbz_g*Y - (Jzazbz_g-1)*X; // use X in second term, wrong in ZCAM paper, right in Jzazbz, fix via inverse(ZCAM supplement)
+  const RGB = M.matrix33_mul3 (Jzazbz_M1, [X_D65, Y_D65, Z]);
+  const PQ = v => {
+    const vη = (v / 10000)**Jzazbz_η;
+    return ((Jzazbz_c1 + Jzazbz_c2 * vη) / (1 + Jzazbz_c3 * vη))**Jzazbz_ρ;
+  }
+  const [R_, G_, B_] = RGB.map (v => PQ (v));
+  const az = +3.524000 * R_ -4.066708 * G_ +0.542708 * B_;
+  const bz = +0.199076 * R_ +1.096799 * G_ -1.295875 * B_;
+  const Iz = G_ - Izazbz_ϵ;
+  return { Iz, az, bz };
+}
+/// Convert from Izazbz color space to absolute XYZ (D65/2°).
+export function xyz_from_Izazbz ({ Iz, az, bz }) {
+  const I = Iz + Izazbz_ϵ;
+  const R_ = I +0.2772100865430786 * az +0.11609463231223774 * bz;
+  const G_ = I; // +0 +0
+  const B_ = I +0.042585801245220344 * az -0.75384457989992004 * bz;
+  const iη = 1 / Jzazbz_η, iρ = 1 / Jzazbz_ρ;
+  const PQinv = v => {
+    const vq = v**iρ;
+    return 10000 * ((Jzazbz_c1 - vq) / (Jzazbz_c3 * vq - Jzazbz_c2))**iη;
+  };
+  const RGB = [R_, G_, B_].map (PQinv);
+  const [X_, Y_, Z] = M.matrix33_mul3 (Jzazbz_R1, RGB);
+  const X = 1/Jzazbz_b * (X_ + (Jzazbz_b-1) * Z);
+  const Y = 1/Jzazbz_g * (Y_ + (Jzazbz_g-1) * X);
+  return { x: X, y: Y, z: Z };
+}
