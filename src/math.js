@@ -11,3 +11,17 @@ export function matrix33_mul3 (A, V) {
   const w = g*x + h*y + i*z;
   return [u,v,w];
 }
+
+/// Multiply matrix `M` by vector `V`.
+export function matrix_mul_v (M, v) {
+  const d = M.length;
+  const r = Array (d);
+  for (let j = 0; j < d; j++) {
+    let sum = 0;
+    const row = M[j], l = row.length;
+    for (let i = 0; i < l; i++)
+      sum += row[i] * v[i];
+    r[j] = sum;
+  }
+  return r;
+}
