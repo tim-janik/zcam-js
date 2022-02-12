@@ -1,15 +1,17 @@
 // This Source Code Form is licensed MPL-2.0: http://mozilla.org/MPL/2.0
 'use strict';
 
+import * as M from './math.js';
+
 // == Chromatic adaptation ==
 /// Chromatic adaptation of the white point for `xyz_prev` according to CIECAM02.
-export function xyz_chromatic_adaptation ({x, y, z}, Wprev, Wref, D = 1) {
+export function xyz_chromatic_adaptation ({x, y, z}, Wprev, Wref, D = 1, cat = null) {
   const {x: xp, y: yp, z: zp} = Wprev; // current white point of {x, y, z}
   const {x: xr, y: yr, z: zr} = Wref;  // new reference white point for {x, y, z}
   // The CIECAM02 color appearance model https://scholarworks.rit.edu/other/143
   // D: Degree of adaptation computed using La and surround
   // https://en.wikipedia.org/wiki/CIECAM02#CAT02
-  const cat = CAT02_CAT;
+  cat = cat && cat.M && cat.I ? cat : BS_CAT;	// cat.I = matrix_invert (cat.M);
   // Some concerns regarding the CAT16 chromatic adaptation transform
   const Ywr2Yw = yp / yr;				// https://lirias.kuleuven.be/retrieve/552107
   const LMSw = M.matrix_mul_v (cat.M, [xp, yp, zp]);	// old white point
@@ -21,11 +23,11 @@ export function xyz_chromatic_adaptation ({x, y, z}, Wprev, Wref, D = 1) {
 }
 
 /// Invert a previous adaptation to `Wref` that resulted in `xyz_dst`.
-export function xyz_chromatic_adaptation_invert ({x, y, z}, Wref, Wprev, D = 1) {
+export function xyz_chromatic_adaptation_invert ({x, y, z}, Wref, Wprev, D = 1, cat = null) {
   const {x: xr, y: yr, z: zr} = Wref;  // current white point of {x, y, z}
   const {x: xp, y: yp, z: zp} = Wprev; // new target white point for {x, y, z}
   // See the forward version xyz_chromatic_adaptation() for commentary
-  const cat = CAT02_CAT;
+  cat = cat && cat.M && cat.I ? cat : BS_CAT;  // cat.I = matrix_invert (cat.M);
   const Ywr2Yw = yp / yr;
   const LMSw = M.matrix_mul_v (cat.M, [xp, yp, zp]);
   const LMSwr = M.matrix_mul_v (cat.M, [xr, yr, zr]);
@@ -42,3 +44,27 @@ export const CAT02_CAT = {
   I: [ [ +1.096123820835514e0,  -2.788690002182872e-1, +1.827451793827731e-1 ],
        [ +4.543690419753592e-1, +4.735331543074117e-1, +7.20978037172291e-2  ],
        [ -9.627608738429352e-3, -5.698031216113419e-3, +1.015325639954543e0  ] ] };
+
+/// S. Bianco, R. Schettini (2010) chromatic adaptation transforms matrix.
+export const BS_CAT = {
+  // Two New von Kries Based Chromatic Adaptation Transforms Found by Numerical Optimization
+  // https://web.stanford.edu/~sujason/ColorBalancing/Papers/Two%20New%20von%20Kries%20Based%20Chromatic%20Adaptation.pdf
+  // A von Kries based chromatic adaptation transforms that outperforms existent CATs (2010)
+  M: [ [0.8752, 0.2787, -0.1539], [-0.8904, 1.8709, 0.0195], [-0.0061, 0.0162, 0.9899] ],
+  I: [ [9.919708341864988e-1, -1.491305030322726e-1, 1.571596688457738e-1],
+       [4.721162516131751e-1, 4.6361647918884e-1, 6.426726919798491e-2],
+       [-1.613558124654806e-3, -8.506195606986636e-3, 1.010119753731641e0] ] };
+/// S. Bianco, R. Schettini (2010) chromatic adaptation transforms matrix without negative lobes.
+export const BS_PC_CAT = {
+  M: [ [0.6489, 0.3915, -0.0404], [-0.3775, 1.3055, 0.0720], [-0.0271, 0.0888, 0.9383] ],
+  // A von Kries based CAT without negative lobes
+  I: [ [1.31231502986015e0, -3.994721455894366e-1, 8.715711572928647e-2],
+       [3.793603435220356e-1, 6.545307997171692e-1, -3.389114323920488e-2],
+       [1.999934780404241e-3, -7.348186098301007e-2, 1.071481926202606e0] ] };
+/// Li, Changjun et al, "The Problem with CAT 02 and Its Correction" chromatic adaptation transforms matrix.
+export const LPLV_CAT = {
+  // The Problem with CAT02 and Its Correction
+  // https://rua.ua.es/dspace/bitstream/10045/18684/1/CAT02-CRA.pdf
+  M: [ [ 1.007245, 0.011136, -0.018381], [-0.318061, 1.314589,  0.003471], [0, 0, 1] ],
+  I: [ [9.901584949593542e-1, -8.387720420502049e-3, 1.822921707342745e-2],
+       [2.3956597922641e-1,    7.586646421469635e-1, 1.770137291268533e-3], [0, 0, 1] ] };
