@@ -116,6 +116,30 @@ function test_zcam () {
     }
     assert.deepEqual (bad, false);
   }
+  // xyz_from_zcam
+  for (let i = 1; i < tests.length; i++) {
+    // prepare conditions
+    const row = tests[i], zcam = results[i], eps = 0.02;
+    const zval = i => { const v = zcam[T[i]] === undefined ? zcam.zcond[T[i]] : zcam[T[i]]; return v === undefined ? NaN : v; };
+    const verify = (zinput, xyz) => {
+      const diff = [ xyz[0] - zcam.X, xyz[1] - zcam.Y, xyz[2] - zcam.Z ];
+      const bad = Math.abs (diff[0]) > eps || Math.abs (diff[1]) > eps || Math.abs (diff[2]) > eps;
+      if (!bad) return;
+      console.log ('**FAIL**: xyz_from_zcam test case broken');
+      console.log ('xyz=', xyz, '\ndiff=', diff, '\nzinput', zinput, '\nzcam=', zcam);
+      assert.deepEqual (bad, false);
+    };
+    let zinput, xyz;
+    // Jz Wz hz
+    zinput = { Jz: zcam.Jz, Wz: zcam.Wz, hz: zcam.hz, viewing: zcam.viewing };
+    verify (zinput, Z.xyz_from_zcam (zinput));
+    // Qz Wz hz
+    zinput = { Qz: zcam.Qz, Wz: zcam.Wz, hz: zcam.hz, viewing: zcam.viewing };
+    verify (zinput, Z.xyz_from_zcam (zinput));
+    // Qz Sz hz
+    zinput = { Qz: zcam.Qz, Sz: zcam.Sz, hz: zcam.hz, viewing: zcam.viewing };
+    verify (zinput, Z.xyz_from_zcam (zinput));
+  }
 }
 
 // Run unit tests
