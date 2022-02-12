@@ -108,14 +108,14 @@ function test_zcam () {
     let bad = 0;
     for (let j = 0; j < row.length; j++) {
       diffs[j] = row[j] - zval (j);
-      bad += Math.abs (diffs[j]) > 10**E[j];
+      bad += !(Math.abs (diffs[j]) < 10**E[j]);
     }
     if (!bad) continue;
     // print
     console.log ('**FAIL**: zcam_from_xyz test case broken');
     console.log (i + ") XYZ:", [row[0], row[1], row[2]], "     [-Diffs-]");
     for (let j = 9; j < row.length; j++) {
-      const bad = Math.abs (diffs[j]) > 10**E[j] ? " **BAD** (" + row[j] + ")" : '';
+      const bad = Math.abs (diffs[j]) < 10**E[j] ? '' : " **BAD** (" + row[j] + ")";
       console.log ("  ", pad (T[j] + ":", 4), num (zval (j)), "  " + dfmt (diffs[j]) + bad);
     }
     assert.deepEqual (bad, false);
@@ -127,7 +127,7 @@ function test_zcam () {
     const zval = i => { const v = zcam[T[i]] === undefined ? zcam.zcond[T[i]] : zcam[T[i]]; return v === undefined ? NaN : v; };
     const verify = (zinput, xyz) => {
       const diff = [ xyz[0] - zcam.X, xyz[1] - zcam.Y, xyz[2] - zcam.Z ];
-      const bad = Math.abs (diff[0]) > eps || Math.abs (diff[1]) > eps || Math.abs (diff[2]) > eps;
+      const bad = !(Math.abs (diff[0]) < eps) || !(Math.abs (diff[1]) < eps) || !(Math.abs (diff[2]) < eps);
       if (!bad) return;
       console.log ('**FAIL**: xyz_from_zcam test case broken');
       console.log ('xyz=', xyz, '\ndiff=', diff, '\nzinput', zinput, '\nzcam=', zcam);
