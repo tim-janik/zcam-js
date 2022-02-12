@@ -1,6 +1,11 @@
 // This Source Code Form is licensed MPL-2.0: http://mozilla.org/MPL/2.0
 'use strict';
 
+import * as M from './math.js';
+
+const deg2rad = Math.PI / 180;
+const rad2deg = 180 / Math.PI;
+
 // == ZCAM color appearance model ==
 export const ZCAM_DARK = 0.525;
 export const ZCAM_DIM = 0.59;
@@ -24,7 +29,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
   const xyz65 = xyz; // FIXME: white point ?
   const [Iz, az, bz] = Izazbz_from_xyz (xyz65);
-  let hz = Math.atan2 (bz, az) * 180/Math.PI;
+  let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
   // step 4: Hue Composition (TODO)
   // Hue Quadrature Table:
@@ -33,7 +38,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // ei:  0.68   0.64   1.52   0.77   0.68
   // Hi:  0    100    200    300    400
   const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
-  const ez = 1.015 + Math.cos (89.038 + h_);
+  const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   const whitepoint2d65 = w => w; // untransformed
   const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
   // brightness
@@ -105,7 +110,7 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
     zcam_missing ("hz");
   const Mz = Cz * Qzw / 100;
   const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
-  const ez = 1.015 + Math.cos (89.038 + h_);
+  const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   const Cz_ = (Mz * Izw**0.78 * Fb**0.1 / (100 * ez**0.068 * FL**0.2))**1.3514;
   const hzrad = hz * Math.PI / 180;
   // xyz65
