@@ -112,10 +112,9 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   const Cz_ = (Mz * Izw**0.78 * Fb**0.1 / (100 * ez**0.068 * FL**0.2))**1.3514;
-  const hzrad = hz * Math.PI / 180;
   // xyz65
-  const az = Cz_ * Math.cos (hzrad);
-  const bz = Cz_ * Math.sin (hzrad);
+  const az = Cz_ * Math.cos (hz * deg2rad);
+  const bz = Cz_ * Math.sin (hz * deg2rad);
   const xyz65 = xyz_from_Izazbz ([Iz, az, bz]);
   // xyz @ [Xw,Yw,Zw]
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
