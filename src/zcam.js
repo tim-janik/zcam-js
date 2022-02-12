@@ -59,3 +59,63 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
 		 viewing };
   return zcam;
 }
+
+/// Construct absolute XYZ values from ZCAM perceptual color attributes.
+export function xyz_from_zcam (zcam, viewing = undefined) {
+  // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
+  // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
+  viewing = viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing;
+  const Fb = Math.sqrt (viewing.Yb / viewing.Yw);
+  const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
+  const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
+  const IzDiv = 2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2;
+  const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
+  const has = v => v !== undefined && !isNaN (v);
+  let Iz, Jz, hz, Qz;
+  // brightness OR lightness
+  const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
+  const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
+  const Qexp = 1.6 * viewing.Fs / Fb**0.12, Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
+  const Qzw = Qmul * Izw**Qexp;
+  if (has (zcam.Qz)) {
+    Qz = zcam.Qz;
+    Iz = (Qz / IzDiv)**IzExp;
+    Jz = 100 * (Qz / Qzw);
+  } else if (has (zcam.Jz)) {
+    Jz = zcam.Jz;
+    Iz = (Jz * 0.01 * Qzw / IzDiv)**IzExp;
+    Qz = Qmul * Iz**Qexp;
+  } else
+    zcam_missing ("Qz OR Jz");
+  // Cz OR Sz OR Wz
+  let Cz;
+  if (has (zcam.Cz))
+    Cz = zcam.Cz;
+  else if (has (zcam.Sz))
+    Cz = Qz * zcam.Sz * zcam.Sz / (100 * Qzw * FL**1.2);
+  else if (has (zcam.Wz))
+    Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - Jz)**2);
+  else
+    zcam_missing ("Cz OR Sz OR Wz");
+  // TODO: Vz Kz
+  // TODO: Hz
+  if (has (zcam.hz))
+    hz = zcam.hz;
+  else
+    zcam_missing ("hz");
+  const Mz = Cz * Qzw / 100;
+  const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
+  const ez = 1.015 + Math.cos (89.038 + h_);
+  const Cz_ = (Mz * Izw**0.78 * Fb**0.1 / (100 * ez**0.068 * FL**0.2))**1.3514;
+  const hzrad = hz * Math.PI / 180;
+  // xyz65
+  const az = Cz_ * Math.cos (hzrad);
+  const bz = Cz_ * Math.sin (hzrad);
+  const xyz65 = xyz_from_Izazbz ([Iz, az, bz]);
+  // xyz @ [Xw,Yw,Zw]
+  const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
+  const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
+  const XYZd65 = [95.047, 100, 108.883];	// standardized D65 white point
+  const xyz = xyz_chromatic_adaptation_invert (xyz65, XYZd65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D);
+  return xyz;
+}
