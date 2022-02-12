@@ -20,6 +20,21 @@ export function xyz_chromatic_adaptation ({x, y, z}, Wprev, Wref, D = 1) {
   return { x: xd, y: yd, z: zd };
 }
 
+/// Invert a previous adaptation to `Wref` that resulted in `xyz_dst`.
+export function xyz_chromatic_adaptation_invert ({x, y, z}, Wref, Wprev, D = 1) {
+  const {x: xr, y: yr, z: zr} = Wref;  // current white point of {x, y, z}
+  const {x: xp, y: yp, z: zp} = Wprev; // new target white point for {x, y, z}
+  // See the forward version xyz_chromatic_adaptation() for commentary
+  const cat = CAT02_CAT;
+  const Ywr2Yw = yp / yr;
+  const LMSw = M.matrix_mul_v (cat.M, [xp, yp, zp]);
+  const LMSwr = M.matrix_mul_v (cat.M, [xr, yr, zr]);
+  const LMSc = M.matrix_mul_v (cat.M, [x, y, z]);
+  const LMS = LMSc.map ((lmsc,i) => (lmsc * LMSw[i]) / (D * LMSwr[i] * Ywr2Yw + (1 - D) * LMSw[i]));
+  const [xd, yd, zd] = M.matrix_mul_v (cat.I, LMS);
+  return { x: xd, y: yd, z: zd };
+}
+
 /// CIECAM02 CAT02 chromatic adaptation transforms matrix.
 export const CAT02_CAT = {
   // The CIECAM02 color appearance model; https://scholarworks.rit.edu/other/143
