@@ -79,6 +79,7 @@ function test_chromatic_adaptation () {
 
 // == zcam.js tests ==
 function test_zcam () {
+  const verbose = false;
   // ZCAM
   const ignores = [ "Hz" ];
   const E = [ -7, -7, -7,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   -7,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
@@ -111,9 +112,9 @@ function test_zcam () {
       diffs[j] = row[j] - zval (j);
       bad += !ignores.includes (T[j]) && !(Math.abs (diffs[j]) < 10**E[j]);
     }
-    if (!bad) continue;
+    if (!bad && !verbose) continue;
     // print
-    console.log ('**FAIL**: zcam_from_xyz test case broken');
+    console.log (bad ? "FAIL:" : "OK:", "zcam_from_xyz():");
     console.log (i + ") XYZ:", [row[0], row[1], row[2]], "     [-Diffs-]");
     for (let j = 9; j < row.length; j++) {
       const bad = Math.abs (diffs[j]) < 10**E[j] ? '' : " **BAD** (" + row[j] + ")";
@@ -129,8 +130,8 @@ function test_zcam () {
     const verify = (zinput, xyz) => {
       const diff = [ xyz[0] - zcam.X, xyz[1] - zcam.Y, xyz[2] - zcam.Z ];
       const bad = !(Math.abs (diff[0]) < eps) || !(Math.abs (diff[1]) < eps) || !(Math.abs (diff[2]) < eps);
-      if (!bad) return;
-      console.log ('**FAIL**: xyz_from_zcam test case broken');
+      if (!bad && !verbose) return;
+      console.log (bad ? "FAIL:" : "OK:", "xyz_from_zcam():");
       console.log ('xyz=', xyz, '\ndiff=', diff, '\nzinput', zinput, '\nzcam=', zcam);
       assert.deepEqual (bad, false);
     };
