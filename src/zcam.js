@@ -24,12 +24,13 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   viewing = viewing ? viewing : zcam_viewing;
+  const strict = !!viewing.strict;
   const Fb = Math.sqrt (viewing.Yb / viewing.Yw);
   const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
   const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
-  const xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, A.CAT02_CAT);
+  const xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
   const [Iz, az, bz] = Izazbz_from_xyz (xyz65);
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
@@ -72,6 +73,7 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   viewing = viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing;
+  const strict = !!viewing.strict;
   const Fb = Math.sqrt (viewing.Yb / viewing.Yw);
   const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
   const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
@@ -122,6 +124,6 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
   const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
-  const xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, A.CAT02_CAT);
+  const xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
   return xyz;
 }
