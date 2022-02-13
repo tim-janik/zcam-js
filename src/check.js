@@ -80,7 +80,7 @@ function test_chromatic_adaptation () {
 // == zcam.js tests ==
 function test_zcam () {
   // ZCAM
-  const E = [ -7, -7, -7,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4 ];
+  const E = [ -7, -7, -7,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   -7,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
   const tests = [
     /*T*/ [ "X", "Y", "Z", "Xw", "Yw", "Zw", "Fs", "La", "Yb", "FL", "Fb", "Iz", "az", "bz", "hz", "Hz", "Qz", "Jz", "Mz", "Cz", "Sz", "Vz", "Kz", "Wz" ],
     /*1*/ [ 185, 206, 163, 256, 264, 202, Z.ZCAM_AVERAGE, 264, 100, 1.0970, 0.6155, 0.3947, -0.0165, -0.0048, 196.3524, 237.6401, 321.3464, 92.2520, 10.5252, 3.0216, 19.1314, 34.7022, 25.2994, 91.6837 ],
@@ -89,6 +89,7 @@ function test_zcam () {
     /*4*/ [ 910, 1114, 500, 2103, 2259, 1401, Z.ZCAM_DARK, 359, 16, 1.2153, 0.0842, 0.6190, -0.0320, 0.0475, 123.9464, 178.6422, 114.7431, 82.6445, 18.1655, 13.0838, 44.7277, 34.4874, 26.8778, 78.2653 ],
     /*5*/ [ 96, 67, 28, 2103, 2259, 1401, Z.ZCAM_DARK, 359, 16, 1.2153, 0.0842, 0.2749, 0.0765, 0.0437, 389.7720 -360, 397.3301, 45.8363, 33.0139, 26.9446, 19.4070, 86.1882, 43.6447, 47.9942, 30.2593 ],
     // Test values (1)-(5) are from "Supplementary document for ZCAM": https://doi.org/10.6084/m9.figshare.13640927.v2
+    // About Kz) given ZCAM paper formula (18) for Kz and ZCAM supplement test values for Jz and Cz, the fractional digits of Kz are not plausible
     // About 3) La & Yb are reset to coefficients from tests (1) and (2) for the results to make sense
     // About 5) hz is adjusted to stay within 0…360
   ];
