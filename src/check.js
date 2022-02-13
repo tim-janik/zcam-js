@@ -134,15 +134,16 @@ function test_zcam () {
       assert.deepEqual (bad, false);
     };
     let zinput, xyz;
-    // Jz Wz hz
-    zinput = { Jz: zcam.Jz, Wz: zcam.Wz, hz: zcam.hz, viewing: zcam.viewing };
-    verify (zinput, Z.xyz_from_zcam (zinput));
-    // Qz Wz hz
-    zinput = { Qz: zcam.Qz, Wz: zcam.Wz, hz: zcam.hz, viewing: zcam.viewing };
-    verify (zinput, Z.xyz_from_zcam (zinput));
-    // Qz Sz hz
-    zinput = { Qz: zcam.Qz, Sz: zcam.Sz, hz: zcam.hz, viewing: zcam.viewing };
-    verify (zinput, Z.xyz_from_zcam (zinput));
+    for (const lightness of ['Jz', 'Qz']) { // Qz OR Jz
+      // Wz hz
+      zinput = { Wz: zcam.Wz, hz: zcam.hz, viewing: zcam.viewing };
+      zinput[lightness] = zcam[lightness];
+      verify (zinput, Z.xyz_from_zcam (zinput));
+      // Sz hz
+      zinput = { Sz: zcam.Sz, hz: zcam.hz, viewing: zcam.viewing };
+      zinput[lightness] = zcam[lightness];
+      verify (zinput, Z.xyz_from_zcam (zinput));
+    }
   }
 }
 
