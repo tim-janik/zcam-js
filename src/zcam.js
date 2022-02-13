@@ -96,19 +96,20 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
     Qz = Qmul * Iz**Qexp;
   } else
     zcam_missing ("Qz OR Jz");
-  // Cz OR Sz OR Wz OR Kz
+  // Cz OR Sz OR Vz OR Wz OR Kz
   let Cz;
   if (has (zcam.Cz))
     Cz = zcam.Cz;
   else if (has (zcam.Sz))
     Cz = Qz * zcam.Sz * zcam.Sz / (100 * Qzw * FL**1.2);
+  else if (has (zcam.Vz))
+    Cz = Math.sqrt ((zcam.Vz**2 - (Jz - 58)**2) * (1/3.4));
   else if (has (zcam.Wz))
     Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - Jz)**2);
   else if (has (zcam.Kz))
     Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - Jz**2) / 2**(3/2);
   else
-    zcam_missing ("Cz OR Sz OR Wz OR Kz");
-  // TODO: Vz Kz
+    zcam_missing ("Cz OR Sz OR Vz OR Wz OR Kz");
   // TODO: Hz
   if (has (zcam.hz))
     hz = zcam.hz;
