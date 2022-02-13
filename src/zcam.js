@@ -15,8 +15,8 @@ export const zcam_viewing = Object.freeze ({
   Fs: ZCAM_AVERAGE,
   Yb: 20,	// sRGB: 20% surround reflectance of reference ambient; https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-4-2021-PDF-E.pdf
   La: 4,	// cd/m², luminance of the adapting field; gray world assumption
-  Yw: 203,	// cd/m², HDR Reference White; ITU-R BT.2408-4 https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-4-2021-PDF-E.pdf
-  Xw: 95.047/100 * 203, Zw: 108.883/100 * 203,
+  Yw: 100,	// cd/m², HDR Reference White; ITU-R BT.2408-4 https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-4-2021-PDF-E.pdf
+  Xw: 95.0429, Zw: 108.89, // ZCAM_D65 and not xyz_whitepoint; https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
 });
 
 /// Calculate ZCAM perceptual color attributes.
@@ -28,7 +28,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
-  const ZCAM_D65 = [95.0429, 100, 108.89]; // https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
+  const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
   const xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, A.CAT02_CAT);
   const [Iz, az, bz] = Izazbz_from_xyz (xyz65);
   let hz = Math.atan2 (bz, az) * rad2deg;
@@ -121,7 +121,7 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   // xyz @ [Xw,Yw,Zw]
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
-  const ZCAM_D65 = [95.0429, 100, 108.89]; // https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
+  const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
   const xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, A.CAT02_CAT);
   return xyz;
 }
