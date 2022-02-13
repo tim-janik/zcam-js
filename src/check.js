@@ -100,7 +100,7 @@ function test_zcam () {
   for (let i = 1; i < tests.length; i++) {
     // prepare conditions
     const row = tests[i], diffs = [];
-    const zcond = { Xw: row[3], Yw: row[4], Zw: row[5], Fs: row[6], La: row[7], Yb: row[8] };
+    const zcond = { Xw: row[3], Yw: row[4], Zw: row[5], Fs: row[6], La: row[7], Yb: row[8], strict: true };
     // calc test
     const xyz = { x: row[0], y: row[1], z: row[2] }, zcam = results[i] = Z.zcam_from_xyz (xyz, zcond);
     // calc diffs
