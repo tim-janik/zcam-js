@@ -11,6 +11,7 @@ const rad2deg = 180 / Math.PI;
 export const ZCAM_DARK = 0.525;
 export const ZCAM_DIM = 0.59;
 export const ZCAM_AVERAGE = 0.69;
+/// Default ZCAM viewing conditions, with ZCAM D65/2° white point in `[Xw,Yw,Zw]`
 export const zcam_viewing = Object.freeze ({
   Fs: ZCAM_AVERAGE,
   Yb: 20,	// sRGB: 20% surround reflectance of reference ambient; https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-4-2021-PDF-E.pdf
