@@ -55,7 +55,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // chroma
   const Cz = 100 * (Mz / Qzw);
   // saturation
-  const Sz = 100 * FL**0.6 * Math.sqrt (Mz / Qz);
+  const Sz = 100 * FL**0.6 * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
   // vividness
   const Vz = Math.sqrt ((Jz - 58)**2 + 3.4 * Cz**2);
   // blackness
