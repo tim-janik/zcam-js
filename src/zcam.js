@@ -12,27 +12,32 @@ export const ZCAM_DARK = 0.525;
 export const ZCAM_DIM = 0.59;
 export const ZCAM_AVERAGE = 0.69;
 
+// ZCAM_D65 is not exactly xyz_whitepoint; https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
+const zcam_white_point = { x: 95.0429, y: 100, z: 108.89 };
+const _zcam_setup = Symbol ('zcam_setup');
+
 /// Default ZCAM viewing conditions, with ZCAM D65/2° white point in `[Xw,Yw,Zw]`
-export const zcam_viewing = Object.freeze ({
+export const zcam_viewing = zcam_setup ({
   Fs: ZCAM_AVERAGE,
   Yb: 20,	// sRGB: 20% surround reflectance of reference ambient; https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-4-2021-PDF-E.pdf
   La: 4,	// cd/m², luminance of the adapting field; gray world assumption
-  Yw: 100,	// cd/m², HDR Reference White; ITU-R BT.2408-4 https://www.itu.int/dms_pub/itu-r/opb/rep/R-REP-BT.2408-4-2021-PDF-E.pdf
-  Xw: 95.0429, Zw: 108.89, // ZCAM_D65 and not xyz_whitepoint; https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
-});
+  Xw: zcam_white_point.x,
+  Yw: zcam_white_point.y, // cd/m²
+  Zw: zcam_white_point.z,
+}, {});
 
 /// Precalculate ZCAM `viewing` auxillary values.
-export function zcam_setup (viewing) {
+export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   if (Object.isFrozen (viewing) && viewing[_zcam_setup])
     return viewing;
   // merge with missing values into new instance
-  viewing = Object.assign ({}, zcam_viewing, viewing);
+  viewing = Object.assign ({}, fallback_viewing, viewing);
   const Fs = viewing.Fs;
   const Fb = Math.sqrt (viewing.Yb / viewing.Yw);
   const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
-  const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
+  const ZCAM_D65 = zcam_white_point;
   const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
   const IzDiv = 2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2;
   const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
@@ -45,7 +50,6 @@ export function zcam_setup (viewing) {
   viewing[_zcam_setup] = Object.freeze (setup);
   return Object.freeze (viewing);
 }
-const _zcam_setup = Symbol ('zcam_setup');
 
 /// Calculate ZCAM perceptual color attributes.
 export function zcam_from_xyz (xyz, viewing = undefined) {
