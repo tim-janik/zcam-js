@@ -131,3 +131,13 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   const xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
   return xyz;
 }
+
+/// Calculate ZCAM perceptual color attributes from sRGB.
+export function zcam_from_srgb (srgb, viewing = undefined) {
+  return zcam_from_xyz (E.xyz_from_srgb (srgb), viewing);
+}
+
+/// Construct sRGB array from ZCAM perceptual color attributes.
+export function srgb_from_zcam (zcam, viewing = undefined) {
+  return E.srgb_from_xyz (xyz_from_zcam (zcam, viewing));
+}
