@@ -11,6 +11,7 @@ const rad2deg = 180 / Math.PI;
 export const ZCAM_DARK = 0.525;
 export const ZCAM_DIM = 0.59;
 export const ZCAM_AVERAGE = 0.69;
+
 /// Default ZCAM viewing conditions, with ZCAM D65/2° white point in `[Xw,Yw,Zw]`
 export const zcam_viewing = Object.freeze ({
   Fs: ZCAM_AVERAGE,
@@ -20,17 +21,38 @@ export const zcam_viewing = Object.freeze ({
   Xw: 95.0429, Zw: 108.89, // ZCAM_D65 and not xyz_whitepoint; https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
 });
 
-/// Calculate ZCAM perceptual color attributes.
-export function zcam_from_xyz (xyz, viewing = undefined) {
-  // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
-  // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
-  viewing = viewing ? viewing : zcam_viewing;
-  const strict = !!viewing.strict;
+/// Precalculate ZCAM `viewing` auxillary values.
+export function zcam_setup (viewing) {
+  if (Object.isFrozen (viewing) && viewing[_zcam_setup])
+    return viewing;
+  // merge with missing values into new instance
+  viewing = Object.assign ({}, zcam_viewing, viewing);
+  const Fs = viewing.Fs;
   const Fb = Math.sqrt (viewing.Yb / viewing.Yw);
   const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
   const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
+  const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
+  const IzDiv = 2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2;
+  const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
+  const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
+  const Qexp = 1.6 * viewing.Fs / Fb**0.12;
+  const Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
+  const Qzw = Qmul * Izw**Qexp;
+  const strict = !!viewing.strict;
+  const setup = { D, F, Fs, Fb, FL, Qexp, Qmul, Qzw, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
+  viewing[_zcam_setup] = Object.freeze (setup);
+  return Object.freeze (viewing);
+}
+const _zcam_setup = Symbol ('zcam_setup');
+
+/// Calculate ZCAM perceptual color attributes.
+export function zcam_from_xyz (xyz, viewing = undefined) {
+  // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
+  // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
+  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+  const { IzDiv, IzExp, Qzw, Qmul, Qexp, Izw, Fb, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
   const xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
   const [Iz, az, bz] = Izazbz_from_xyz (xyz65);
   let hz = Math.atan2 (bz, az) * rad2deg;
@@ -43,11 +65,8 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // Hi:  0    100    200    300    400
   const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
-  const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
-  const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
   // brightness
-  const Qexp = 1.6 * viewing.Fs / Fb**0.12, Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
-  const Qz  = Qmul * Iz**Qexp, Qzw = Qmul * Izw**Qexp;
+  const Qz  = Qmul * Iz**Qexp;
   // lightness
   const Jz = 100 * (Qz / Qzw);
   // colorfulness
@@ -73,20 +92,12 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
 export function xyz_from_zcam (zcam, viewing = undefined) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
-  viewing = viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing;
-  const strict = !!viewing.strict;
-  const Fb = Math.sqrt (viewing.Yb / viewing.Yw);
-  const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
-  const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
-  const IzDiv = 2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2;
   const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
+  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  const { IzDiv, IzExp, Qzw, Qmul, Qexp, Izw, Fb, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
   const has = v => v !== undefined && !isNaN (v);
   let Iz, Jz, hz, Qz;
   // brightness OR lightness
-  const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
-  const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
-  const Qexp = 1.6 * viewing.Fs / Fb**0.12, Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
-  const Qzw = Qmul * Izw**Qexp;
   if (has (zcam.Qz)) {
     Qz = zcam.Qz;
     Iz = (Qz / IzDiv)**IzExp;
@@ -125,9 +136,6 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   const bz = Cz_ * Math.sin (hz * deg2rad);
   const xyz65 = xyz_from_Izazbz ([Iz, az, bz]);
   // xyz @ [Xw,Yw,Zw]
-  const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
-  const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
-  const ZCAM_D65 = [zcam_viewing.Xw, zcam_viewing.Yw, zcam_viewing.Zw];
   const xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
   return xyz;
 }
