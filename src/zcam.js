@@ -49,8 +49,9 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   const Qexp = 1.6 * viewing.Fs / Fb**0.12;
   const Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
   const Qzw = Qmul * Izw**Qexp;
+  const Wpc = Qzw * Izw**0.78 * Fb**0.1 / (100 * 100 * FL**0.2); // White point context factor
   const strict = !!viewing.strict;
-  const setup = { D, F, Fs, Fb, FL, Qexp, Qmul, Qzw, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
+  const setup = { D, F, Fs, Fb, FL, Qexp, Qmul, Qzw, Wpc, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
   viewing[_zcam_setup] = Object.freeze (setup);
   return Object.freeze (viewing);
 }
@@ -102,7 +103,7 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-  const { IzDiv, IzExp, Qzw, Qmul, Qexp, Izw, Fb, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
+  const { IzDiv, IzExp, Qzw, Qmul, Qexp, Wpc, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
   const has = v => v !== undefined && !isNaN (v);
   let Iz, Jz, hz, Qz;
   // brightness OR lightness
@@ -135,10 +136,9 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
     hz = zcam.hz;
   else
     zcam_missing ("hz");
-  const Mz = Cz * Qzw / 100;
   const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
-  const Cz_ = (Mz * Izw**0.78 * Fb**0.1 / (100 * ez**0.068 * FL**0.2))**1.3514;
+  const Cz_ = (Wpc * Cz / ez**0.068)**1.3514;
   // xyz65
   const az = Cz_ * Math.cos (hz * deg2rad);
   const bz = Cz_ * Math.sin (hz * deg2rad);
