@@ -62,7 +62,9 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
   const { IzDiv, IzExp, Qzw, Qmul, Qexp, Izw, Fb, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
-  const xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
+  let xyz65 = xyz;
+  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
+    xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
   const [Iz, az, bz] = Izazbz_from_xyz (xyz65);
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
@@ -144,7 +146,9 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   const bz = Cz_ * Math.sin (hz * deg2rad);
   const xyz65 = xyz_from_Izazbz ([Iz, az, bz]);
   // xyz @ [Xw,Yw,Zw]
-  const xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
+  let xyz = xyz65;
+  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
+    xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
   return xyz;
 }
 
