@@ -68,7 +68,7 @@ export function Izazbz_from_xyz ({ x: X, y: Y, z: Z }) {
   const X_D65 = Jzazbz_b*X - (Jzazbz_b-1)*Z; // use Z in second term, wrong in ZCAM paper, right in Jzazbz, fix via inverse(ZCAM supplement)
   const Y_D65 = Jzazbz_g*Y - (Jzazbz_g-1)*X; // use X in second term, wrong in ZCAM paper, right in Jzazbz, fix via inverse(ZCAM supplement)
   const RGB = M.matrix33_mul3 (Jzazbz_M1, [X_D65, Y_D65, Z]);
-  const PQ = v => {
+  const PQ = v => {	// PQ (0 … 1e304) -> 3.703522621019e-11 … 3.22711272562802
     const vη = (v / 10000)**Jzazbz_η;
     return ((Jzazbz_c1 + Jzazbz_c2 * vη) / (1 + Jzazbz_c3 * vη))**Jzazbz_ρ;
   }
@@ -85,7 +85,9 @@ export function xyz_from_Izazbz ({ Iz, az, bz }) {
   const G_ = I; // +0 +0
   const B_ = I +0.042585801245220344 * az -0.75384457989992004 * bz;
   const iη = 1 / Jzazbz_η, iρ = 1 / Jzazbz_ρ;
-  const PQinv = v => {
+  const PQinv = v => {	// PQinv (3.703522621019e-11 … 3.227112725627976130) -> 0.0 … 1.07046320073227e+88
+    if (v < 3.0506790660512e-8)	return 1e-7;
+    if (v > 2.1581301655179)	return 1e+7;
     const vq = v**iρ;
     return 10000 * ((Jzazbz_c1 - vq) / (Jzazbz_c3 * vq - Jzazbz_c2))**iη;
   };
