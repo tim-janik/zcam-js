@@ -1,5 +1,6 @@
 // This Source Code Form is licensed MPL-2.0: http://mozilla.org/MPL/2.0
 'use strict';
+
 import * as M from './math.js';
 
 // == Jzazbz color space ==
@@ -47,4 +48,14 @@ export function xyz_from_Jzazbz ({ j: Jz, a: az, b: bz }) {
   const X = 1/Jzazbz_b * (X_ + (Jzazbz_b-1) * Z);
   const Y = 1/Jzazbz_g * (Y_ + (Jzazbz_g-1) * X);
   return { x: X, y: Y, z: Z };
+}
+
+/// Convert from sRGB to Jzazbz color space.
+export function Jzazbz_from_srgb (srgb) {
+  return Jzazbz_from_xyz (E.xyz_from_srgb (srgb));
+}
+
+/// Convert from Jzazbz color space to sRGB array.
+export function srgb_from_Jzazbz (Jzazbz) {
+  return E.srgb_from_xyz (xyz_from_Jzazbz (Jzazbz));
 }
