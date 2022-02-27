@@ -145,6 +145,10 @@ function test_zcam () {
       }
     }
   }
+  // ZCAM and sRGB tests
+  assert.deepEqual ('#faebde', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#faebde'))));
+  assert.deepEqual ('#071adc', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#071adc'))));
+  assert.deepEqual ('#23be7c', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#23be7c'))));
 }
 
 // Run unit tests
