@@ -25,3 +25,14 @@ export function matrix_mul_v (M, v) {
   }
   return r;
 }
+
+/// Constrain `x` to lie within `min` and `max`.
+export function clamp (x, min, max) {
+  return x < min ? min : x > max ? max : x; // retains x if NaN
+}
+
+/// Linear interpolation function for scalars of vectors.
+export function lerp (u, v, t = 0.5) {
+  const b = clamp (t, 0, 1), a = 1 - b;
+  return u.map ? u.map ((ui, i) => ui * a + v[i] * b) : u * a + v * b;
+}
