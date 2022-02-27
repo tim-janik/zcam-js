@@ -36,3 +36,8 @@ export function lerp (u, v, t = 0.5) {
   const b = clamp (t, 0, 1), a = 1 - b;
   return u.map ? u.map ((ui, i) => ui * a + v[i] * b) : u * a + v * b;
 }
+
+/// Yield 0 for 0, -1 for negative and +1 for positive inputs without branching.
+export function sgn (x) {
+  return (0 < x) - (x < 0);
+}
