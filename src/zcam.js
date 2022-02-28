@@ -49,9 +49,12 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   const Qexp = 1.6 * viewing.Fs / Fb**0.12;
   const Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
   const Qzw = Qmul * Izw**Qexp;
+  const ByQzw = 100 / Qzw;
   const Wpc = Qzw * Izw**0.78 * Fb**0.1 / (100 * 100 * FL**0.2); // White point context factor
+  const MzF = FL**0.2 * 100 / (Fb**0.1 * Izw**0.78);
+  const SzF = 100 * FL**0.6;
   const strict = !!viewing.strict;
-  const setup = { D, F, Fs, Fb, FL, Qexp, Qmul, Qzw, Wpc, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
+  const setup = { D, F, Fs, Fb, FL, MzF, SzF, Qexp, Qmul, Qzw, ByQzw, Wpc, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
   viewing[_zcam_setup] = Object.freeze (setup);
   return Object.freeze (viewing);
 }
@@ -61,7 +64,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
-  const { IzDiv, IzExp, Qzw, Qmul, Qexp, Izw, Fb, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
+  const { IzDiv, IzExp, ByQzw, Qmul, Qexp, Izw, Fb, FL, MzF, SzF, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
   let xyz65 = xyz;
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
@@ -79,19 +82,19 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // brightness
   const Qz  = Qmul * Iz**Qexp;
   // lightness
-  const Jz = 100 * (Qz / Qzw);
+  const Jz = Qz * ByQzw;
   // colorfulness
-  const Mz = 100 * (az**2 + bz**2)**0.37 * (ez**0.068 * FL**0.2) / (Fb**0.1 * Izw**0.78);
+  const Mz = (az * az + bz * bz)**0.37 * ez**0.068 * MzF;
   // chroma
-  const Cz = 100 * (Mz / Qzw);
+  const Cz = Mz * ByQzw, Cz2 = Cz * Cz;
   // saturation
-  const Sz = 100 * FL**0.6 * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
+  const Sz = SzF * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
   // vividness
-  const Vz = Math.sqrt ((Jz - 58)**2 + 3.4 * Cz**2);
+  const Vz = Math.sqrt ((Jz - 58)**2 + 3.4 * Cz2);
   // blackness
-  const Kz = 100 - 0.8 * Math.sqrt (Jz**2 + 8 * Cz**2);
+  const Kz = 100 - 0.8 * Math.sqrt (Jz**2 + 8 * Cz2);
   // whiteness
-  const Wz = 100 - Math.sqrt ((100 - Jz)**2 + Cz**2);
+  const Wz = 100 - Math.sqrt ((100 - Jz)**2 + Cz2);
   // result
   const zcam = { X: xyz[0], Y: xyz[1], Z: xyz[2], xyz65,
 		 FL, Fb, Iz, az, bz, hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz,
