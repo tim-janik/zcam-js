@@ -81,8 +81,8 @@ function test_chromatic_adaptation () {
 function test_zcam () {
   const verbose = false;
   // ZCAM
-  const ignores = [ "Hz" ];
-  const E = [ -7, -7, -7,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   -7,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
+  const NA = NaN; // not applicable
+  const E = [ NA, NA,  NA,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   NA,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
   const tests = [
     /*T*/ [ "X", "Y", "Z", "Xw", "Yw", "Zw", "Fs", "La", "Yb", "FL", "Fb", "Iz", "az", "bz", "hz", "Hz", "Qz", "Jz", "Mz", "Cz", "Sz", "Vz", "Kz", "Wz" ],
     /*1*/ [ 185, 206, 163, 256, 264, 202, Z.ZCAM_AVERAGE, 264, 100, 1.0970, 0.6155, 0.3947, -0.0165, -0.0048, 196.3524, 237.6401, 321.3464, 92.2520, 10.5252, 3.0216, 19.1314, 34.7022, 25.2994, 91.6837 ],
@@ -110,7 +110,7 @@ function test_zcam () {
     let bad = 0;
     for (let j = 0; j < row.length; j++) {
       diffs[j] = row[j] - zval (j);
-      bad += !ignores.includes (T[j]) && !(Math.abs (diffs[j]) < 10**E[j]);
+      bad += !isNaN (T[j]) && !(Math.abs (diffs[j]) < 10**E[j]);
     }
     if (!bad && !verbose) continue;
     // print
@@ -128,7 +128,7 @@ function test_zcam () {
     const row = tests[i], zcam = results[i], eps = 0.02;
     const zval = i => { const v = zcam[T[i]] === undefined ? zcam.zcond[T[i]] : zcam[T[i]]; return v === undefined ? NaN : v; };
     const verify = (zinput, xyz) => {
-      const diff = [ xyz[0] - zcam.X, xyz[1] - zcam.Y, xyz[2] - zcam.Z ];
+      const diff = [ xyz.x - row[0], xyz.y - row[1], xyz.z - row[2] ];
       const bad = !(Math.abs (diff[0]) < eps) || !(Math.abs (diff[1]) < eps) || !(Math.abs (diff[2]) < eps);
       if (!bad && !verbose) return;
       console.log (bad ? "FAIL:" : "OK:", "xyz_from_zcam():");
