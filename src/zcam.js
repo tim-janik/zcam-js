@@ -72,10 +72,8 @@ export function zcam_from_srgb (srgb, viewing = undefined) {
 
 /// Calculate ZCAM perceptual color attributes.
 export function zcam_from_xyz (xyz, viewing = undefined) {
-  // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
-  // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
-  const { IzDiv, IzExp, ByQzw, Qmul, Qexp, Izw, Fb, FL, MzF, SzF, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
+  const { D, strict, ZCAM_D65 } = viewing[_zcam_setup];
   let xyz65 = xyz;
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
@@ -158,10 +156,12 @@ export function Izazbz_from_zcam (zcam, viewing) {
     Qz = Qmul * Iz**Qexp;
   } else
     zcam_missing ("Qz OR Jz");
-  // Cz OR Sz OR Vz OR Wz OR Kz
+  // Cz OR Sz OR Mz OR Vz OR Wz OR Kz
   let Cz;
   if (has (zcam.Cz))
     Cz = zcam.Cz;
+  else if (has (zcam.Mz))
+    Cz = zcam.Mz * ByQzw;
   else if (has (zcam.Sz))
     Cz = Qz * zcam.Sz * zcam.Sz * ByQzwF;
   else if (has (zcam.Vz))
@@ -171,7 +171,7 @@ export function Izazbz_from_zcam (zcam, viewing) {
   else if (has (zcam.Kz))
     Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - Jz**2) * (1.0 / 2**(3/2));
   else
-    zcam_missing ("Cz OR Sz OR Vz OR Wz OR Kz");
+    zcam_missing ("Cz OR Sz OR Mz OR Vz OR Wz OR Kz");
   // TODO: Hz
   if (has (zcam.hz))
     hz = zcam.hz;
