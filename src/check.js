@@ -135,10 +135,9 @@ function test_zcam () {
       console.log ('xyz=', xyz, '\ndiff=', diff, '\nzinput', zinput, '\nzcam=', zcam);
       assert.deepEqual (bad, false);
     };
-    let zinput, xyz;
     for (const lightness of ['Jz', 'Qz']) { // Qz OR Jz
-      for (const chroma of ['Kz', 'Wz', 'Sz']) {
-	zinput = { hz: zcam.hz, viewing: zcam.viewing };
+      for (const chroma of ['Cz', 'Sz', 'Mz', 'Vz', 'Wz', 'Kz']) {
+	const zinput = { hz: zcam.hz, viewing: zcam.viewing };
 	zinput[lightness] = zcam[lightness];
 	zinput[chroma] = zcam[chroma];
 	verify (zinput, Z.xyz_from_zcam (zinput));
