@@ -59,6 +59,15 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   return Object.freeze (viewing);
 }
 
+/// Calculate ZCAM perceptual color attributes from sRGB.
+export function zcam_from_srgb (srgb, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+  const { D, ZCAM_D65 } = viewing[_zcam_setup];
+  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
+    return zcam_from_xyz (E.xyz_from_srgb (srgb), viewing);
+  return zcam_from_Izazbz (Izazbz_from_srgb (srgb), viewing);
+}
+
 /// Calculate ZCAM perceptual color attributes.
 export function zcam_from_xyz (xyz, viewing = undefined) {
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
@@ -68,7 +77,14 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   let xyz65 = xyz;
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
-  const [Iz, az, bz] = Izazbz_from_xyz (xyz65);
+  return zcam_from_Izazbz (Izazbz_from_xyz (xyz65), viewing);
+}
+
+/// Calculate ZCAM perceptual color attributes from Izazbz.
+function zcam_from_Izazbz ({Iz, az, bz}, viewing) {
+  // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
+  // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
+  const { IzExp, ByQzw, Qmul, Qexp, Izw, Fb, MzF, SzF } = viewing[_zcam_setup];
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
   // step 4: Hue Composition (TODO)
@@ -96,14 +112,33 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   // whiteness
   const Wz = 100 - Math.sqrt ((100 - Jz)**2 + Cz2);
   // result
-  const zcam = { X: xyz[0], Y: xyz[1], Z: xyz[2], xyz65,
-		 FL, Fb, Iz, az, bz, hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz,
-		 viewing };
+  const zcam = { Fb, Iz, az, bz, hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz, viewing };
   return zcam;
+}
+
+/// Construct sRGB array from ZCAM perceptual color attributes.
+export function srgb_from_zcam (zcam, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  const { D, ZCAM_D65 } = viewing[_zcam_setup];
+  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
+    return E.srgb_from_xyz (xyz_from_zcam (zcam, viewing));
+  return srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
 }
 
 /// Construct absolute XYZ values from ZCAM perceptual color attributes.
 export function xyz_from_zcam (zcam, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  const { D, strict, ZCAM_D65 } = viewing[_zcam_setup];
+  const xyz65 = xyz_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
+  // xyz @ [Xw,Yw,Zw]
+  let xyz = xyz65;
+  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
+    xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
+  return xyz;
+}
+
+/// Construct Izazbz from ZCAM perceptual color attributes.
+export function Izazbz_from_zcam (zcam, viewing) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
@@ -147,20 +182,5 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   // xyz65
   const az = Cz_ * Math.cos (hz * deg2rad);
   const bz = Cz_ * Math.sin (hz * deg2rad);
-  const xyz65 = xyz_from_Izazbz ([Iz, az, bz]);
-  // xyz @ [Xw,Yw,Zw]
-  let xyz = xyz65;
-  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
-    xyz = A.xyz_chromatic_adaptation_invert (xyz65, ZCAM_D65, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, D, strict ? A.CAT02_CAT : null);
-  return xyz;
-}
-
-/// Calculate ZCAM perceptual color attributes from sRGB.
-export function zcam_from_srgb (srgb, viewing = undefined) {
-  return zcam_from_xyz (E.xyz_from_srgb (srgb), viewing);
-}
-
-/// Construct sRGB array from ZCAM perceptual color attributes.
-export function srgb_from_zcam (zcam, viewing = undefined) {
-  return E.srgb_from_xyz (xyz_from_zcam (zcam, viewing));
+  return {Iz, az, bz};
 }
