@@ -43,18 +43,20 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
   const ZCAM_D65 = zcam_white_point;
   const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
-  const IzDiv = 2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2;
+  const IzDiv = 1.0 / (2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2);
   const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
   const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
   const Qexp = 1.6 * viewing.Fs / Fb**0.12;
   const Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
   const Qzw = Qmul * Izw**Qexp;
   const ByQzw = 100 / Qzw;
+  const ByQzwF = 1.0 / (100 * Qzw * FL**1.2);
+  const JzDiv = 0.01 * Qzw * IzDiv;
   const Wpc = Qzw * Izw**0.78 * Fb**0.1 / (100 * 100 * FL**0.2); // White point context factor
   const MzF = FL**0.2 * 100 / (Fb**0.1 * Izw**0.78);
   const SzF = 100 * FL**0.6;
   const strict = !!viewing.strict;
-  const setup = { D, F, Fs, Fb, FL, MzF, SzF, Qexp, Qmul, Qzw, ByQzw, Wpc, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
+  const setup = { D, Fs, Fb, ByQzwF, MzF, SzF, Qexp, Qmul, Qzw, ByQzw, Wpc, JzDiv, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
   viewing[_zcam_setup] = Object.freeze (setup);
   return Object.freeze (viewing);
 }
@@ -142,18 +144,17 @@ export function Izazbz_from_zcam (zcam, viewing) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
-  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-  const { IzDiv, IzExp, Qzw, Qmul, Qexp, Wpc, FL, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
+  const { JzDiv, IzDiv, IzExp, ByQzw, Qmul, Qexp, Wpc, ByQzwF, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
   const has = v => v !== undefined && !isNaN (v);
   let Iz, Jz, hz, Qz;
   // brightness OR lightness
   if (has (zcam.Qz)) {
     Qz = zcam.Qz;
-    Iz = (Qz / IzDiv)**IzExp;
-    Jz = 100 * (Qz / Qzw);
+    Iz = (Qz * IzDiv)**IzExp;
+    Jz = Qz * ByQzw;
   } else if (has (zcam.Jz)) {
     Jz = zcam.Jz;
-    Iz = (Jz * 0.01 * Qzw / IzDiv)**IzExp;
+    Iz = (Jz * JzDiv)**IzExp;
     Qz = Qmul * Iz**Qexp;
   } else
     zcam_missing ("Qz OR Jz");
@@ -162,13 +163,13 @@ export function Izazbz_from_zcam (zcam, viewing) {
   if (has (zcam.Cz))
     Cz = zcam.Cz;
   else if (has (zcam.Sz))
-    Cz = Qz * zcam.Sz * zcam.Sz / (100 * Qzw * FL**1.2);
+    Cz = Qz * zcam.Sz * zcam.Sz * ByQzwF;
   else if (has (zcam.Vz))
     Cz = Math.sqrt ((zcam.Vz**2 - (Jz - 58)**2) * (1/3.4));
   else if (has (zcam.Wz))
     Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - Jz)**2);
   else if (has (zcam.Kz))
-    Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - Jz**2) / 2**(3/2);
+    Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - Jz**2) * (1.0 / 2**(3/2));
   else
     zcam_missing ("Cz OR Sz OR Vz OR Wz OR Kz");
   // TODO: Hz
