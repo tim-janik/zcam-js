@@ -197,14 +197,28 @@ export function Izazbz_from_zcam (zcam, viewing) {
 }
 
 /// Check if ZCAM results in coordinates within sRGB gamut.
-function inside_rgb (zcam) {
-  const {r, g, b} = linear_rgb_from_zcam (zcam);
+function inside_rgb (zcam, viewing) {
+  const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
   const z = -0.0000152587890625, o = +1.0000152587890625;
   return r > z && r < o && g > z && g < o && b > z && b < o;
 }
 
 /// Find chroma maximum for hue and brightness.
-export function zcam_maximize_Cz (viewing, hz, Qz, eps = 0.1, maxCz = 101) {
-  const cz_inside_rgb = cz => inside_rgb ({ hz, Qz, Cz: cz });
+export function zcam_hue_maximize_Cz (hz, Qz, eps = 0.1, maxCz = 101, viewing = undefined) {
+  const cz_inside_rgb = Cz => inside_rgb ({ hz, Qz, Cz }, viewing);
   return M.bsearch_max (cz_inside_rgb, 0, maxCz, eps);
+}
+
+/// Find (Cz, Qz) cusp for hue.
+/// Execution is expensive, depending on `eps`, several hundred ZCAM transforms may be needed.
+export function zcam_hue_find_cusp (hz, eps = 0.1, maxCz = 101, viewing = undefined) {
+  const hue_maximize_Cz = qz => zcam_hue_maximize_Cz (hz, qz, eps, maxCz, viewing);
+  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+  const { JzDiv, IzExp, Qexp, Qmul, ByQzw, SzF } = viewing[_zcam_setup];
+  const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
+  const { x, y } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
+  const Qz = x, Cz = y;
+  const Mz = Cz / ByQzw;
+  const Sz = SzF * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
+  return { hz, Qz, Cz, Jz: Qz * ByQzw, Mz, Sz };
 }
