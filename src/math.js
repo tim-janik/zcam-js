@@ -190,3 +190,39 @@ export class CubicSpline {
     }
   }
 }
+
+/// Fit a subset of (xs, ys) within epsilon with a cubic spline.
+export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []) {
+  // find largest ys diff
+  function spline_maxdiff (cpx, cpy) {
+    const a = cpx[0], b = cpx[cpx.length-1];
+    const spline = new CubicSpline (cpx, cpy);
+    let x, y, dy = 0;
+    for (let i = 0; i < xs.length; i++) {
+      const cx = xs[i], cy = ys[i];
+      const delta = cy - spline.splint (cx);
+      if (Math.abs (delta) > dy) {
+        dy = Math.abs (delta);
+        x = cx;
+	y = cy;
+      }
+    }
+    return { spline, dy, x, y };
+  }
+  // force control points at start, end, fixed
+  const cp = [], nm1 = xs.length-1;
+  cp.push ([ xs[0], ys[0] ]);
+  if (fixed)
+    for (const [i,x] of xs.entries())
+      if (fixed.indexOf (x) >= 0)
+	cp.push ([ x, ys[i] ]);
+  cp.push ([ xs[nm1], ys[nm1] ]);
+  // add control points while diff exceeds eps
+  while (true) {
+    cp.sort ((p, n) => p[0] - n[0]);
+    const { spline, dy, x, y } = spline_maxdiff (cp.map (xy => xy[0]), cp.map (xy => xy[1]));
+    if (dy < epsilon || cp.length >= max_points)
+      return { spline, diff: dy };
+    cp.push ([x, y]);
+  }
+}
