@@ -41,3 +41,15 @@ export function lerp (u, v, t = 0.5) {
 export function sgn (x) {
   return (0 < x) - (x < 0);
 }
+
+/// Find largest position (within `eps`) in `[vmin…vmax]` for which `predicate()` is true.
+export function bsearch_max (predicate, vmin, vmax, eps = 1e-5) {
+  let v;
+  for (v = (vmax + vmin) * 0.5; Math.abs (vmax - vmin) > eps; v = (vmax + vmin) * 0.5) {
+    if (predicate (v))
+      vmin = v;
+    else
+      vmax = v;
+  }
+  return v;
+}
