@@ -125,6 +125,16 @@ export function srgb_from_zcam (zcam, viewing = undefined) {
   return srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
 }
 
+function linear_rgb_from_zcam (zcam, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  const { D, ZCAM_D65 } = viewing[_zcam_setup];
+  if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y) {
+    const [r, g, b] = E.linear_rgb_from_xyz (xyz_from_zcam (zcam, viewing));
+    return {r, g, b};
+  }
+  return linear_rgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
+}
+
 /// Construct absolute XYZ values from ZCAM perceptual color attributes.
 export function xyz_from_zcam (zcam, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
@@ -184,4 +194,17 @@ export function Izazbz_from_zcam (zcam, viewing) {
   const az = Cz_ * Math.cos (hz * deg2rad);
   const bz = Cz_ * Math.sin (hz * deg2rad);
   return {Iz, az, bz};
+}
+
+/// Check if ZCAM results in coordinates within sRGB gamut.
+function inside_rgb (zcam) {
+  const {r, g, b} = linear_rgb_from_zcam (zcam);
+  const z = -0.0000152587890625, o = +1.0000152587890625;
+  return r > z && r < o && g > z && g < o && b > z && b < o;
+}
+
+/// Find chroma maximum for hue and brightness.
+export function zcam_maximize_Cz (viewing, hz, Qz, eps = 0.1, maxCz = 101) {
+  const cz_inside_rgb = cz => inside_rgb ({ hz, Qz, Cz: cz });
+  return M.bsearch_max (cz_inside_rgb, 0, maxCz, eps);
 }
