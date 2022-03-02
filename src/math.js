@@ -53,3 +53,47 @@ export function bsearch_max (predicate, vmin, vmax, eps = 1e-5) {
   }
   return v;
 }
+
+// Golden-Section Search
+const gss_upper = 0.61803398874989484820458683436563811772030917980575; // = 1 / phi = 0.5 * (5**0.5 - 1)
+const gss_lower = 0.38196601125010515179541316563436188227969082019424; // = 1 / phi^2 = 0.5 * (3 - 5**0.5)
+// Given f() with single local extremum in [a,b], yield [c,d] containing it within eps.
+function gss_extremum (f, a, b, M, eps) {
+  // https://en.wikipedia.org/wiki/Golden-section_search#Recursive_algorithm
+  let range = b - a, i = 0, c, fc, d, fd;
+  while (i++ < 257) {
+    if (c === undefined) {
+      c = a + gss_lower * range;
+      fc = f (c);
+    }
+    if (d === undefined) {
+      d = a + gss_upper * range;
+      fd = f (d);
+    }
+    const fc_gt_fd = (fc > fd) ^ M; // M = need_minimum
+    //                   a   c  d   b
+    if (fc_gt_fd) { //   [-  ^  _  -]
+      b = d;
+      d = c; fd = fc;
+      c = undefined;
+    } else { // fd > fc  [-  _  ^  -]
+      a = c;
+      c = d; fc = fd;
+      d = undefined;
+    }
+    range = b - a;
+    if (range < eps)
+      return fc_gt_fd ? { a, b, x: d, y: fd } : { a, b, x: c, y: fc };
+  }
+  throw new Error ('Too many iterations: [' + a + ',' + b + '] eps=' + eps);
+}
+
+/// Golden-section search for single maximum of `f([a…b])`
+export function gss_max (f, a, b, eps = 1e-5) {
+  return gss_extremum (f, Math.min (a, b), Math.max (a, b), 0, eps);
+}
+
+/// Golden-section search for single minimum of `f([a…b])`
+export function gss_min (f, a, b, eps = 1e-5) {
+  return gss_extremum (f, Math.min (a, b), Math.max (a, b), 1, eps);
+}
