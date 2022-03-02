@@ -148,6 +148,10 @@ function test_zcam () {
   assert.deepEqual ('#faebde', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#faebde'))));
   assert.deepEqual ('#071adc', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#071adc'))));
   assert.deepEqual ('#23be7c', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#23be7c'))));
+  // ZCAM hue tests
+  const o_rnd1 = o => { for (const k in o) if ('number' == typeof o[k]) o[k] = rnd (o[k], 1); return o; };
+  const cusp_259 = { hz: 259, Qz: 79.4, Cz: 42.6, Jz: 49.1, Mz: 68.8, Sz: 81.0 };
+  assert.deepEqual (o_rnd1 (Z.zcam_hue_find_cusp (259, 1e-2)), cusp_259);
 }
 
 // Run unit tests
