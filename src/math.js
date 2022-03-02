@@ -97,3 +97,96 @@ export function gss_max (f, a, b, eps = 1e-5) {
 export function gss_min (f, a, b, eps = 1e-5) {
   return gss_extremum (f, Math.min (a, b), Math.max (a, b), 1, eps);
 }
+
+/* Inspired by:
+ * 1977, Computer methods for mathematical computations, G. Forsythe, et al; pg 76-79, spline() and seval()
+ * 1994, Algorithms Second Edition, Robert Sedgewick; pg 624 makespline() and eval()
+ * 2016, https://github.com/LiGengLei/x50/blob/master/src/x50_interface/src/spline_old.cpp
+ * 2020, Fast Cubic Spline Interpolation, Haysn Hornbeck; https://arxiv.org/abs/2001.09253
+ * 2020, https://github.com/gscalzo/SwiftCubicSpline/blob/master/Sources/SwiftCubicSpline/CubicSpline.swift
+ */
+export class CubicSpline {
+  constructor (xs = [], ys = []) {
+    this.setup (xs, ys);
+  }
+  splint (t) { return this.splint_newint (t); }
+  splint_forsythe (t) {
+    const x = this.x;
+    for (let i = x.length - 1; i >= 0; i--)
+      if (x[i] <= t) {				// §4.5 Forsythe, pg. 79
+	const f = t - this.x[i];
+	const c = this.sg[i] + this.sg[i] + this.sg[i]; // C == SIGMA * 3 == S''(x)/6
+	return this.a[i] + f * (this.b[i] + f * (c + f * this.d[i]));
+      }
+    return this.a[0];
+  }
+  splint_sedgewick (t) {
+    const x = this.x;
+    for (let i = x.length - 2; i >= 0; i--)
+      if (x[i] <= t) {
+	const y = this.a, h = x[i+1] - x[i];
+	const w = (t - x[i]) / h, v = 1 - w;	// also, §4.4 Forsythe, pg. 71
+	const sg0t = this.sg[i], sg1t = this.sg[i+1]; // == sigma[i], sigma[i+1]
+	return w * y[i+1] + v * y[i] + h*h * ((w*w*w - w) * sg1t + (v*v*v - v) * sg0t) /* /6.0 */;
+      }
+    return this.a[0];
+  }
+  splint_newint (t) {
+    const x = this.x;
+    for (let i = x.length - 2; i >= 0; i--)
+      if (x[i] <= t) {
+	return newint (t, x[i], x[i+1], this.a[i], this.a[i+1], this.sg[i], this.sg[i+1]);
+	function newint (x, x0, x1, y0, y1, sg0, sg1) { // 2020, Fast Cubic Spline Interpolation, Haysn Hornbeck
+	  const h = (x1 - x0);
+	  const wh = (x - x0);
+	  const inv_h = 1. / h;
+	  const bx = (x1 - x);
+	  const h2 = h * h;			// 3 adds , 1 mult , 1 div
+	  const lower = wh * y1 + bx * y0;
+	  const C = (wh * wh - h2) * wh * sg1;
+	  const D = (bx * bx - h2) * bx * sg0;	// 1 add , 2 subs , 8 mults
+	  // 2 adds , 2 mult = 19 ops + 1 div
+	  return (lower + /* (1/6)* */ (C + D)) * inv_h;
+	}
+      }
+    return this.a[0];
+  }
+  setup (xs, ys) {
+    if (xs.length !== ys.length)
+      throw 'CubicSpline: setup: mismatching xs/ys values';
+    const npoints = xs.length;
+    const x = this.x = new Float64Array (xs);		// this.y == S(x)
+    const a = this.a = ys.length ? new Float64Array (ys) : new Float64Array (1);
+    const b = this.b = new Float64Array (npoints);
+    const sg = this.sg = new Float64Array (npoints);
+    const d = this.d = new Float64Array (npoints);
+
+    if (npoints <= 1) return;
+    const nm1 = npoints - 1;
+
+    // tri-diagonal system and forward substitution
+    b[0] = 0
+    sg[0] = 0
+    d[0] = x[1] - x[0];
+    for (let i = 1; i < nm1; i++) {
+      d[i] = x[i + 1] - x[i];				// == Forsythe:DO10:D(I) == Sedgewick:for3:u[i]
+      const diag = 2 * (x[i + 1] - x[i - 1]);		// == Forsythe:DO10:B(I) == Sedgewick:for2:d[i]
+      const d1y0 = a[i] - a[i - 1], d1y1 = a[i + 1] - a[i];
+      const d2ydx = d1y1 / d[i] - d1y0 / d[i - 1];	// == Forsythe:DO10:C(I) == Sedgewick:for4:w[i]/6
+      const b20 = diag - d[i - 1] * b[i - 1];		// == Forsythe:DO20:B(I) == Sedgewick:for5:d[i]
+      b[i] = d[i] / b20;				// == Forsythe:DO20:D(I)/B(I) == Sedgewick:for5:u[i]/d[i]
+      sg[i] = (d2ydx - d[i - 1] * sg[i - 1]) / b20;	// == Forsythe:DO20:C(I) == CubicSpline.swift:z[i]/3
+    }
+
+    // backward substitution and coefficient calculation
+    sg[nm1] = 0;
+    for (let i = nm1 - 1; i >= 0; i--) {
+      sg[i] = sg[i] - b[i] * sg[i + 1];			// == Forsythe:DO30:C(I) == Forsythe:SIGMA
+      const d1y1 = a[i + 1] - a[i];
+      const sg22 = sg[i + 1] + 2 * sg[i];
+      b[i] = d1y1 / d[i] - d[i] * sg22;			// == Forsythe:DO40:B(I) == S'(x)
+      d[i] = (sg[i + 1] - sg[i]) / d[i];		// == Forsythe:DO40:D(i) == S'''(x)/6
+      // this.c[i + 1] = sg[i + 1] * 3;			// == Forsythe:DO40:C(I) == S''(x)/6 == SIGMA * 3
+    }
+  }
+}
