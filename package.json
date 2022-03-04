@@ -2,7 +2,10 @@
   "name": "zcam-js",
   "version": "0.0.2",
   "license": "MPL-2.0",
+  "author": "Tim Janik",
   "bugs": "https://github.com/tim-janik/zcam-js/issues",
   "homepage": "https://github.com/tim-janik/zcam-js",
+  "keywords": [ "ZCAM", "colour" ],
+  "description": "ZCAM color appearance model in JS with related tools and utilities",
   "repository": "github:tim-janik/zcam-js.git"
 }
