@@ -14,7 +14,7 @@ export const ZCAM_AVERAGE = 0.69;
 
 // ZCAM_D65 uses this XYZ white point; https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
 const zcam_white_point = { x: 95.0429, y: 100, z: 108.89 };
-const _zcam_setup = Symbol ('zcam_setup');
+export const _zcam_setup = Symbol ('zcam_setup');
 
 /// Default ZCAM viewing conditions, with ZCAM D65/2° white point in `[Xw,Yw,Zw]`
 export const zcam_viewing = zcam_setup ({
@@ -197,7 +197,7 @@ export function Izazbz_from_zcam (zcam, viewing) {
 }
 
 /// Check if ZCAM results in coordinates within sRGB gamut.
-function inside_rgb (zcam, viewing) {
+export function inside_rgb (zcam, viewing) {
   const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
   const z = -0.0000152587890625, o = +1.0000152587890625;
   return r > z && r < o && g > z && g < o && b > z && b < o;
