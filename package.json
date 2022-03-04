@@ -1,4 +1,7 @@
 {
   "name": "zcam-js",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "bugs": "https://github.com/tim-janik/zcam-js/issues",
+  "homepage": "https://github.com/tim-janik/zcam-js",
+  "repository": "github:tim-janik/zcam-js.git"
 }
