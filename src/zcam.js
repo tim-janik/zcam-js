@@ -212,12 +212,17 @@ export function zcam_hue_maximize_Cz (hz, Qz, eps = 0.1, maxCz = 101, viewing = 
 /// Find (Cz, Qz) cusp for hue.
 /// Execution is expensive, depending on `eps`, several hundred ZCAM transforms may be needed.
 export function zcam_hue_find_cusp (hz, eps = 0.1, maxCz = 101, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+  const { JzDiv, IzExp, Qexp, Qmul } = viewing[_zcam_setup];
+  const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
   const hue_maximize_Cz = qz => zcam_hue_maximize_Cz (hz, qz, eps, maxCz, viewing);
+  const { x: Qz, y: Cz } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
+  return zcam_extend (hz, Qz, Cz, viewing);
+}
+
+export function zcam_extend (hz, Qz, Cz, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
   const { JzDiv, IzExp, Qexp, Qmul, ByQzw, SzF } = viewing[_zcam_setup];
-  const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
-  const { x, y } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
-  const Qz = x, Cz = y;
   const Mz = Cz / ByQzw;
   const Sz = SzF * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
   return { hz, Qz, Cz, Jz: Qz * ByQzw, Mz, Sz };
