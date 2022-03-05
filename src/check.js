@@ -20,3 +20,4 @@ function test_math () {
 
 // Run unit tests
 test_math();
+console.log ("OK:", process.argv[1]);
