@@ -1,8 +1,9 @@
 // This Source Code Form is licensed MPL-2.0: http://mozilla.org/MPL/2.0
 'use strict';
 
-import * as A from './adaptation.js';
 import * as M from './math.js';
+import * as A from './adaptation.js';
+import * as J from './jzazbz.js';
 
 const deg2rad = Math.PI / 180;
 const rad2deg = 180 / Math.PI;
@@ -45,7 +46,7 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
   const IzDiv = 1.0 / (2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2);
   const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
-  const Izw = Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }))[0];
+  const Izw = J.Izazbz_from_xyz (whitepoint2d65 ({ x: viewing.Xw, y: viewing.Yw, z: viewing.Zw })).Iz;
   const Qexp = 1.6 * viewing.Fs / Fb**0.12;
   const Qmul = 2700 * viewing.Fs**2.2 * Math.sqrt (Fb) * FL**0.2;
   const Qzw = Qmul * Izw**Qexp;
@@ -67,7 +68,7 @@ export function zcam_from_srgb (srgb, viewing = undefined) {
   const { D, ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     return zcam_from_xyz (E.xyz_from_srgb (srgb), viewing);
-  return zcam_from_Izazbz (Izazbz_from_srgb (srgb), viewing);
+  return zcam_from_Izazbz (J.Izazbz_from_srgb (srgb), viewing);
 }
 
 /// Calculate ZCAM perceptual color attributes.
@@ -77,11 +78,11 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   let xyz65 = xyz;
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     xyz65 = A.xyz_chromatic_adaptation (xyz, { x: viewing.Xw, y: viewing.Yw, z: viewing.Zw }, ZCAM_D65, D, strict ? A.CAT02_CAT : null);
-  return zcam_from_Izazbz (Izazbz_from_xyz (xyz65), viewing);
+  return zcam_from_Izazbz (J.Izazbz_from_xyz (xyz65), viewing);
 }
 
 /// Calculate ZCAM perceptual color attributes from Izazbz.
-function zcam_from_Izazbz ({Iz, az, bz}, viewing) {
+function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   const { IzExp, ByQzw, Qmul, Qexp, Izw, Fb, MzF, SzF } = viewing[_zcam_setup];
@@ -122,7 +123,7 @@ export function srgb_from_zcam (zcam, viewing = undefined) {
   const { D, ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     return E.srgb_from_xyz (xyz_from_zcam (zcam, viewing));
-  return srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
+  return J.srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
 }
 
 function linear_rgb_from_zcam (zcam, viewing = undefined) {
@@ -132,14 +133,14 @@ function linear_rgb_from_zcam (zcam, viewing = undefined) {
     const [r, g, b] = E.linear_rgb_from_xyz (xyz_from_zcam (zcam, viewing));
     return {r, g, b};
   }
-  return linear_rgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
+  return J.linear_rgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
 }
 
 /// Construct absolute XYZ values from ZCAM perceptual color attributes.
 export function xyz_from_zcam (zcam, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
   const { D, strict, ZCAM_D65 } = viewing[_zcam_setup];
-  const xyz65 = xyz_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
+  const xyz65 = J.xyz_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
   // xyz @ [Xw,Yw,Zw]
   let xyz = xyz65;
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
