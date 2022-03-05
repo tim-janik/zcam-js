@@ -56,6 +56,9 @@ function test_jzazbz () {
   assert.deepEqual (Object.values (J.Jzazbz_from_xyz (xyz_red)).map (rnd7),   [ 0.0989666,  0.0996457,  0.0912348 ]);
   assert.deepEqual (Object.values (J.Jzazbz_from_xyz (xyz_green)).map (rnd7), [ 0.1318698, -0.0928627,  0.1005678 ]);
   assert.deepEqual (Object.values (J.Jzazbz_from_xyz (xyz_blue)).map (rnd7),  [ 0.0692379, -0.0309179, -0.1563231 ]);
+  // Izazbz
+  assert.deepEqual (Object.values (J.xyz_from_Izazbz (J.Izazbz_from_xyz ({ x: 0.1, y: 0.2, z: 0.3 }))).map (rnd7), [0.1, 0.2, 0.3]);
+  assert.deepEqual (Object.values (J.Izazbz_from_xyz ({ x: 1, y: 1, z: 1 })).map (rnd7), [0.0390851, 0.0023111, 0.0018745]);
 }
 
 // Run unit tests
