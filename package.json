@@ -8,5 +8,8 @@
   "keywords": [ "ZCAM", "colour" ],
   "description": "ZCAM color appearance model in JS with related tools and utilities",
   "repository": "github:tim-janik/zcam-js.git",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test": "node src/check.js"
+  }
 }
