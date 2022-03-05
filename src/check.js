@@ -5,6 +5,7 @@ import * as assert from 'assert';
 import * as M from './math.js';
 import * as S from './srgb.js';
 import * as J from './jzazbz.js';
+import * as A from './adaptation.js';
 
 /// Round to a given number of digits.
 const rnd = (v, digits = 0) => Math.round (v * 10**digits) / 10**digits;
@@ -61,8 +62,24 @@ function test_jzazbz () {
   assert.deepEqual (Object.values (J.Izazbz_from_xyz ({ x: 1, y: 1, z: 1 })).map (rnd7), [0.0390851, 0.0023111, 0.0018745]);
 }
 
+// == adaptation.js tests ==
+function test_chromatic_adaptation () {
+  const xyz_ref = { x: 95.0429, y: 100, z: 108.89 };
+  const xyz_100 = { x: 100, y: 100, z: 100 };
+  let xyz_dest = A.xyz_chromatic_adaptation (xyz_100, xyz_100, xyz_ref);
+  assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values (xyz_ref));
+  xyz_dest = A.xyz_chromatic_adaptation_invert (xyz_ref, xyz_ref, xyz_100);
+  assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values (xyz_100));
+  const xyz_918 = { x: 96.42, y: 100, z: 82.49 }, D = 0.98765;
+  xyz_dest = A.xyz_chromatic_adaptation ({ x: 50, y: 70, z: 60 }, xyz_918, xyz_ref, D);
+  xyz_dest = A.xyz_chromatic_adaptation_invert (xyz_dest, xyz_ref, xyz_918, D);
+  assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values ({ x: 50, y: 70, z: 60 }));
+}
+
+
 // Run unit tests
 test_math();
 test_srgb();
 test_jzazbz();
+test_chromatic_adaptation();
 console.log ("OK:", process.argv[1]);
