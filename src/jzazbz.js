@@ -123,7 +123,7 @@ export function Izazbz_from_xyz ({ x: X, y: Y, z: Z }) {
 }
 
 /// Convert from Izazbz color space to linear RGB object.
-function linear_rgb_from_Izazbz ({ Iz, az, bz }) {
+export function linear_rgb_from_Izazbz ({ Iz, az, bz }) {
   const I = Iz + Izazbz_ϵ;
   const R_ = I +0.2772100865430786 * az +0.11609463231223774 * bz;
   const G_ = I; // +0 +0
