@@ -110,7 +110,7 @@ function test_zcam () {
     let bad = 0;
     for (let j = 0; j < row.length; j++) {
       diffs[j] = row[j] - zval (j);
-      bad += !isNaN (T[j]) && !(Math.abs (diffs[j]) < 10**E[j]);
+      bad += !isNaN (E[j]) && !(Math.abs (diffs[j]) < 10**E[j]);
     }
     if (!bad && !verbose) continue;
     // print
