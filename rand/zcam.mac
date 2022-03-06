@@ -1,0 +1,28 @@
+/* This Source Code Form is licensed MPL-2.0: http://mozilla.org/MPL/2.0 */
+
+display2d: false;
+fpprec: 157;
+fpprintprec: 19;
+
+
+/* From ZCAM:
+ * X = b * x - (b-1) * z
+ * Y = g * y - (g-1) * x
+ * Gives:
+ * X = b * x + 0 * y + (1-b) * z
+ * Y = (1-g) * x + g * y + 0 * z
+ * Z = 0*x + 0*y + 1*z
+ */
+b: 1.15;
+g: 0.66;
+M_XY: matrix( [b, 0, 1-b], [1-g, g, 0], [0, 0, 1] );
+
+Jzazbz_M1: matrix( [0.41478972, 0.579999, 0.0146480], [-0.2015100, 1.120649, 0.0531008], [-0.0166008, 0.264800, 0.6684799] );
+
+/* from cie.mac */
+RGB2XYZ: matrix( [4.123865632529917046b1, 3.575914909206253417b1, 1.804504912035636722b1],
+    	         [2.126368216773238477b1, 7.151829818412506834b1, 7.218019648142546886b0],
+                 [1.933062015248398615b0, 1.191971636402084472b1, 9.5037258700543534b1] ) ;
+
+LRGB_4_JZAZBZ: Jzazbz_M1 . M_XY . RGB2XYZ;
+JZAZBZ_4_LRGB: invert (LRGB_4_IZAZBZ);

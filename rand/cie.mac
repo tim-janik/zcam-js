@@ -1,0 +1,103 @@
+/* MIT licensed, https://opensource.org/licenses/MIT
+ * Authors: Alexei Boronine, Bastien Dejean, Tim Janik
+ */
+
+display2d: false;
+fpprec: 97;
+fpprintprec: 19;
+
+/* Matrices generated with the following algorithm:
+http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+Which makes use of this transformation:
+http://www.brucelindbloom.com/index.html?Eqn_xyY_to_XYZ.html */
+
+/* http://www.brucelindbloom.com/Eqn_xyY_to_XYZ.html */
+xyY_to_XYZ(x, y, Y) := [x * Y / y, Y, (1 - x - y) * Y / y];
+
+/* sRGB primaries and white point
+
+https://en.wikipedia.org/wiki/SRGB#The_sRGB_gamut
+https://en.wikipedia.org/wiki/Rec._709
+https://en.wikipedia.org/wiki/Illuminant_D65
+
+Note that many sources including CIE 15:2004 specify D65 numbers rounded to 5
+decimal places. */
+
+/* https://en.wikipedia.org/wiki/SRGB#Gamut */
+x_r: rat(0.6400); y_r: rat(0.3300);
+x_g: rat(0.3000); y_g: rat(0.6000);
+x_b: rat(0.1500); y_b: rat(0.0600);
+
+/* Use white point coefficients that:
+ * a) make a well behaved color space profile, and
+ * b) closely match the white pont used for the ZCAM paper. See:
+ * https://ninedegreesbelow.com/photography/well-behaved-profiles-quest.html#white-point-values
+ */
+x_w: rat(0.31271); y_w: rat(0.32902);
+
+/* http://www.brucelindbloom.com/Eqn_RGB_XYZ_Matrix.html */
+[X_r, Y_r, Z_r]: xyY_to_XYZ(x_r, y_r, 1);
+[X_g, Y_g, Z_g]: xyY_to_XYZ(x_g, y_g, 1);
+[X_b, Y_b, Z_b]: xyY_to_XYZ(x_b, y_b, 1);
+[X_w, Y_w, Z_w]: xyY_to_XYZ(x_w, y_w, 1);
+
+M_P: matrix([X_r, X_g, X_b],
+            [Y_r, Y_g, Y_b],
+            [Z_r, Z_g, Z_b]);
+M_S: invert(M_P) . [X_w, Y_w, Z_w];
+
+/* Construct XYZ/RGB matrixes and scale to Y=100 */
+M_RGB_XYZ: 100 * M_P * transpose(addcol(M_S, M_S, M_S));
+M_XYZ_RGB: invert(M_RGB_XYZ);
+
+/* Note that the standard defines these constants as decimals and
+ * is incorrect. We are using the correct non-standard values. See:
+ * http://www.brucelindbloom.com/LContinuity.html
+ */
+
+epsilon: (6 / 29) ^ 3;
+kappa: (29 / 3) ^ 3;
+ref_U: (4 * X_w) / (X_w + (15 * Y_w) + (3 * Z_w));
+ref_V: (9 * Y_w) / (X_w + (15 * Y_w) + (3 * Z_w));
+
+L_to_Y(L) :=
+    if (L > 8)
+    then Y_w * ((L + 16) / 116) ^ 3
+    else Y_w * L / kappa;
+
+Y_to_L(Y) :=
+    if (Y <= epsilon)
+    then (Y / Y_w) * kappa
+    else 116 * (Y / Y_w) ^ (1 / 3) - 16;
+
+LUV_to_XYZ(L, U, V) := block(
+    [var_Y, var_U, var_V, Y, X, Z],
+    var_Y : L_to_Y(L),
+    var_U : U / (13 * L) + ref_U,
+    var_V : V / (13 * L) + ref_V,
+    Y    : var_Y * Y_w,
+    X    : 0 - (9 * Y * var_U) / ((var_U - 4) * var_V - var_U * var_V),
+    Z    : (9 * Y - (15 * var_V * Y) - (var_V * X)) / (3 * var_V),
+    [X, Y, Z]
+);
+
+linear_to_sRGB(c) :=
+    if (c <= 0.0031308)
+    then 12.92 * c
+    else 1.055 * c ^ (1 / 2.4) - 0.055;
+
+sRGB_to_linear(c) :=
+    if (c > 0.04045)
+    then ((c + 0.055) / 1.055) ^ 2.4
+    else c / 12.92;
+
+bfloat(M_XYZ_RGB);
+bfloat(M_RGB_XYZ);
+bfloat(X_w);
+bfloat(Y_w);
+bfloat(Z_w);
+bfloat(ref_U);
+bfloat(ref_V);
+bfloat(epsilon);
+bfloat(kappa);
+bfloat(1/kappa);
