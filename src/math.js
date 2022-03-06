@@ -106,9 +106,19 @@ export function gss_min (f, a, b, eps = 1e-5) {
  * 2020, https://github.com/gscalzo/SwiftCubicSpline/blob/master/Sources/SwiftCubicSpline/CubicSpline.swift
  */
 export class CubicSpline {
- constructor (xs = [], ys = []) {
+  constructor (xs = undefined, ys = undefined) {
     this.segments = [];
-    this.setup (xs, ys);
+    if (Array.isArray (xs) && ys === undefined)
+      this.from_segments (xs);
+    else if (Array.isArray (xs) && Array.isArray (ys))
+      this.setup (xs, ys);
+    else
+      this.setup ([], []);
+  }
+  reset () {
+    this.segments = [];
+    this.x = this.a = this.b = this.sg = this.d = null;
+    this.setup ([], []);
   }
   setup (xs, ys) {
     this.add_segment (xs, ys);
@@ -218,6 +228,24 @@ export class CubicSpline {
       Object.assign (this, seg);
       this.segments = [ seg.x.length ];
     }
+  }
+  to_segments() {
+    let array = [], offset = 0;
+    for (const seg of this.segments) {
+      const xs = [], ys = [];
+      for (let i = 0; i < seg; i++) {
+	xs.push (this.x[offset + i]);
+	ys.push (this.a[offset + i]);
+      }
+      offset += seg;
+      array.push ({ xs, ys });
+    }
+    return array;
+  }
+  from_segments (segments) {
+    this.reset();
+    for (const seg of segments)
+       this.add_segment (seg.xs, seg.ys);
   }
 }
 
