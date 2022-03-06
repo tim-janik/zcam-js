@@ -216,7 +216,7 @@ export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []
   cp.push ([ xs[0], ys[0] ]);
   if (fixed)
     for (const [i,x] of xs.entries())
-      if (fixed.indexOf (x) >= 0)
+      if (i > 0 && i < nm1 && fixed.indexOf (x) >= 0)
 	cp.push ([ x, ys[i] ]);
   cp.push ([ xs[nm1], ys[nm1] ]);
   // add control points while diff exceeds eps
