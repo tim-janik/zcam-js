@@ -57,7 +57,7 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   const MzF = FL**0.2 * 100 / (Fb**0.1 * Izw**0.78);
   const SzF = 100 * FL**0.6;
   const strict = !!viewing.strict;
-  const setup = { D, Fs, Fb, ByQzwF, MzF, SzF, Qexp, Qmul, Qzw, ByQzw, Wpc, JzDiv, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
+  const setup = { D, Fs, FL, Fb, ByQzwF, MzF, SzF, Qexp, Qmul, Qzw, ByQzw, Wpc, JzDiv, IzExp, IzDiv, Izw, strict, ZCAM_D65: Object.freeze (ZCAM_D65) };
   viewing[_zcam_setup] = Object.freeze (setup);
   return Object.freeze (viewing);
 }
@@ -85,7 +85,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
 function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
-  const { IzExp, ByQzw, Qmul, Qexp, Izw, Fb, MzF, SzF } = viewing[_zcam_setup];
+  const { IzExp, ByQzw, Qmul, Qexp, Izw, FL, Fb, MzF, SzF } = viewing[_zcam_setup];
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
   // step 4: Hue Composition (TODO)
@@ -113,7 +113,7 @@ function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   // whiteness
   const Wz = 100 - Math.sqrt ((100 - Jz)**2 + Cz2);
   // result
-  const zcam = { Fb, Iz, az, bz, hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz, viewing };
+  const zcam = { FL, Fb, Iz, az, bz, hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz, viewing };
   return zcam;
 }
 
