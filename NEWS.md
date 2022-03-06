@@ -1,4 +1,9 @@
-0.0.5    # 2022-03-06 Tim Janik b20f34e
+## 0.0.6    # 2022-03-06 Tim Janik
+
+* Fixed ZCAM tests not catching NaN values
+* Fixed the ZCAM transformations lacking the .FL field
+
+## 0.0.5    # 2022-03-06 Tim Janik b20f34e
 * Added maxima sources for optimized Jzazbz <-> SRGB transformations
 * Added maxima sources for XYZ transformations and D65 white point
   Based on cie.mac from HSLuv by Alexei Boronine
