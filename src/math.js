@@ -169,7 +169,10 @@ export class CubicSpline {
     sg[0] = 0
     d[0] = x[1] - x[0];
     for (let i = 1; i < nm1; i++) {
-      d[i] = x[i + 1] - x[i];				// == Forsythe:DO10:D(I) == Sedgewick:for3:u[i]
+      const delta_x = x[i + 1] - x[i];
+      if (!(delta_x > 0))
+	throw new Error ('Control point x values must be increasing: i=' + i + ' x[i]=' + x[i] + ' x[i+1]=' + x[i+1]);
+      d[i] = delta_x;					// == Forsythe:DO10:D(I) == Sedgewick:for3:u[i]
       const diag = 2 * (x[i + 1] - x[i - 1]);		// == Forsythe:DO10:B(I) == Sedgewick:for2:d[i]
       const d1y0 = a[i] - a[i - 1], d1y1 = a[i + 1] - a[i];
       const d2ydx = d1y1 / d[i] - d1y0 / d[i - 1];	// == Forsythe:DO10:C(I) == Sedgewick:for4:w[i]/6
