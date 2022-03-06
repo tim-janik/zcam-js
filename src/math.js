@@ -106,8 +106,12 @@ export function gss_min (f, a, b, eps = 1e-5) {
  * 2020, https://github.com/gscalzo/SwiftCubicSpline/blob/master/Sources/SwiftCubicSpline/CubicSpline.swift
  */
 export class CubicSpline {
-  constructor (xs = [], ys = []) {
+ constructor (xs = [], ys = []) {
+    this.segments = [];
     this.setup (xs, ys);
+  }
+  setup (xs, ys) {
+    this.add_segment (xs, ys);
   }
   splint (t) { return this.splint_newint (t); }
   splint_forsythe (t) {
@@ -151,15 +155,15 @@ export class CubicSpline {
       }
     return this.a[0];
   }
-  setup (xs, ys) {
-    if (xs.length !== ys.length)
-      throw 'CubicSpline: setup: mismatching xs/ys values';
+  add_segment (xs, ys) {
+    if (xs.length > ys.length)
+      throw new Error ('CubicSpline: setup: mismatching xs/ys values');
     const npoints = xs.length;
-    const x = this.x = new Float64Array (xs);		// this.y == S(x)
-    const a = this.a = ys.length ? new Float64Array (ys) : new Float64Array (1);
-    const b = this.b = new Float64Array (npoints);
-    const sg = this.sg = new Float64Array (npoints);
-    const d = this.d = new Float64Array (npoints);
+    const x = new Float64Array (xs);		// this.y == S(x)
+    const a = ys.length ? new Float64Array (ys) : new Float64Array (1);
+    const b = new Float64Array (npoints);
+    const sg = new Float64Array (npoints);
+    const d = new Float64Array (npoints);
 
     if (npoints <= 1) return;
     const nm1 = npoints - 1;
@@ -189,7 +193,30 @@ export class CubicSpline {
       const sg22 = sg[i + 1] + 2 * sg[i];
       b[i] = d1y1 / d[i] - d[i] * sg22;			// == Forsythe:DO40:B(I) == S'(x)
       d[i] = (sg[i + 1] - sg[i]) / d[i];		// == Forsythe:DO40:D(i) == S'''(x)/6
-      // this.c[i + 1] = sg[i + 1] * 3;			// == Forsythe:DO40:C(I) == S''(x)/6 == SIGMA * 3
+      // c[i + 1] = sg[i + 1] * 3;			// == Forsythe:DO40:C(I) == S''(x)/6 == SIGMA * 3
+    }
+
+    const olength = this.x?.length || 0;
+    const seg = { x, a, b, sg, d };
+    if (olength && x[0] >= this.x[olength-1]) {
+      for (const field of Object.keys (seg)) {
+	const old = this[field];
+	this[field] = new Float64Array (olength + seg[field].length);
+	this[field].set (old, 0);
+	this[field].set (seg[field], olength);
+      }
+      this.segments.push (seg.x.length);
+    } else if (olength) { // prepend segment
+      for (const field of Object.keys (seg)) {
+	const old = this[field];
+	this[field] = new Float64Array (seg[field].length + olength);
+	this[field].set (seg[field], 0);
+	this[field].set (old, seg[field].length);
+      }
+      this.segments.unshift (seg.x.length);
+    } else {
+      Object.assign (this, seg);
+      this.segments = [ seg.x.length ];
     }
   }
 }
