@@ -87,3 +87,8 @@ export function srgb_to_linear (srgb) {
 export function srgb_from_linear ({r, g, b}) {
   return [srgb_companding (r), srgb_companding (g), srgb_companding (b)];
 }
+
+/// Check if RGB object is exactly with `[0…1]` range per channel.
+export function rgb_inside_gamut ({r, g, b}) {
+  return r >= 0.0 && r <= 1.0 && g >= 0.0 && g <= 1.0 && b >= 0.0 && b <= 1.0;
+}
