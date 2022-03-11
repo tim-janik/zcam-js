@@ -4,6 +4,7 @@
 import * as M from './math.js';
 import * as A from './adaptation.js';
 import * as J from './jzazbz.js';
+import * as S from './srgb.js';
 
 const deg2rad = Math.PI / 180;
 const rad2deg = 180 / Math.PI;
@@ -198,11 +199,11 @@ export function Izazbz_from_zcam (zcam, viewing) {
   return {Iz, az, bz};
 }
 
-/// Check if ZCAM results in coordinates within sRGB gamut.
-export function inside_rgb (zcam, viewing) {
+/// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
+export function srgb_from_zcam_8bit (zcam, viewing) {
   const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
-  const z = -0.0000152587890625, o = +1.0000152587890625;
-  return r > z && r < o && g > z && g < o && b > z && b < o;
+  const inside = S.linear_rgb_inside_8bit_gamut ({r, g, b});
+  return { r: S.srgb_companding (r), g: S.srgb_companding (g), b: S.srgb_companding (b), inside };
 }
 
 /// Find chroma maximum for hue and brightness.
