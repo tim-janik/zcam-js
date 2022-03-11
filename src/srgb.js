@@ -92,3 +92,19 @@ export function srgb_from_linear ({r, g, b}) {
 export function rgb_inside_gamut ({r, g, b}) {
   return r >= 0.0 && r <= 1.0 && g >= 0.0 && g <= 1.0 && b >= 0.0 && b <= 1.0;
 }
+
+const zero_srgb = - 1 / 255 / 2;
+const one_srgb = 1 + 1 / 255 / 2;
+
+/// Check if rounded sRGB object is within sRGB gamut with 8bit channel width.
+export function srgb_inside_8bit_gamut ({r, g, b}) {
+  return r > zero_srgb && r < one_srgb && g > zero_srgb && g < one_srgb && b > zero_srgb && b < one_srgb;
+}
+
+const zero_lrgb = srgb_eotf (zero_srgb);
+const one_lrgb = srgb_eotf (one_srgb);
+
+/// Check if rounded linear RGB object is within sRGB gamut with 8bit channel width.
+export function linear_rgb_inside_8bit_gamut ({r, g, b}) {
+  return r > zero_lrgb && r < one_lrgb && g > zero_lrgb && g < one_lrgb && b > zero_lrgb && b < one_lrgb;
+}
