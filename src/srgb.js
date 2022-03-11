@@ -20,14 +20,22 @@ export function srgb_hex (rgb) {
 
 /// Create sRGB array from color string, integer or vector `[ 0…1, 0…1, 0…1 ]`
 export function srgb_from (srgb) {
+  // array
   if (Array.isArray (srgb))
     return srgb;
-  if ('number' === typeof srgb) {
+  // number
+  const otype = typeof srgb;
+  if ('number' === otype) {
     const r = ((srgb | 0) & 0xff0000) >> 16;
     const g = ((srgb | 0) & 0xff00) >> 8;
     const b = (srgb | 0) & 0xff;
     return [r / 255.0, g / 255.0, b / 255.0];
   }
+  // object {r, g, b}
+  if ('object' == otype) {
+    return [srgb.r, srgb.g, srgb.b];
+  }
+  // string
   const offset = srgb.substr (0, 1) == '#' ? 1 : 0;
   if (srgb.length - offset >= 6)
     {
