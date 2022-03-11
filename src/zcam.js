@@ -126,7 +126,8 @@ export function srgb_from_zcam (zcam, viewing = undefined) {
   return J.srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
 }
 
-function linear_rgb_from_zcam (zcam, viewing = undefined) {
+/// Construct linear RGB object from ZCAM perceptual color attributes.
+export function linear_rgb_from_zcam (zcam, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
   const { D, ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y) {
