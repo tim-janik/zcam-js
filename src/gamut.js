@@ -83,6 +83,26 @@ export class Gamut {
     this.minCz = Array.from (this.Cz_spline.a).reduce ((p, n) => Math.min (p, n));
     this.maxCz = Array.from (this.Cz_spline.a).reduce ((p, n) => Math.max (p, n));
   }
+  /// Shift `hz` into range approximated by splines.
+  _clamp_hz (hz) {
+    const max_hue = this.extrema[this.extrema.length-1];
+    while (hz > max_hue)
+      hz -= 360;
+    while (hz < T.hue_extrema[0])
+      hz += 360;
+    return hz;
+  }
+  /// Find (Jz, Cz) cusp for `hz°`.
+  find_cusp (hz) {
+    // calculation accuracy of reference values
+    const cusp_epsilon = 1e-5;
+    if (!this.Jz_spline)
+      return Z.zcam_hue_find_cusp (hz, cusp_epsilon, 101, this.viewing);
+    hz = this._clamp_hz (hz);
+    const Jz = this.Jz_spline.splint (hz);
+    const Cz = this.Cz_spline.splint (hz);
+    return Z.zcam_extend ({ hz, Jz, Cz }, this.viewing);
+  }
 }
 
 // == Spline fitting ==
