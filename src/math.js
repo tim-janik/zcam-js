@@ -195,7 +195,6 @@ export class CubicSpline {
 export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []) {
   // find largest ys diff
   function spline_maxdiff (cpx, cpy) {
-    const a = cpx[0], b = cpx[cpx.length-1];
     const spline = new CubicSpline (cpx, cpy);
     let x, y, dy = 0;
     for (let i = 0; i < xs.length; i++) {
