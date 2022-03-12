@@ -271,6 +271,18 @@ export function zcam_ensure_Mz (zcam, viewing = undefined) {
   return zcam;
 }
 
+/// Add Qz, Jz, Cz, Sz to `zcam` if missing.
+export function zcam_extend (zcam, viewing = undefined) {
+  if (viewing || !zcam.viewing?.[_zcam_setup])
+    zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  zcam_ensure_Jz (zcam);
+  zcam_ensure_Qz (zcam);
+  zcam_ensure_Cz (zcam);
+  zcam_ensure_Mz (zcam);
+  zcam_ensure_Sz (zcam);
+  return zcam;
+}
+
 /// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
 export function srgb_from_zcam_8bit (zcam, viewing) {
   const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
@@ -293,13 +305,5 @@ export function zcam_hue_find_cusp (hz, eps = 1e-3, maxCz = 101, viewing = undef
   const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
   const hue_maximize_Cz = qz => zcam_hue_maximize_Cz (hz, qz, eps, maxCz, viewing);
   const { x: Qz, y: Cz } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
-  return zcam_extend (hz, Qz, Cz, viewing);
-}
-
-export function zcam_extend (hz, Qz, Cz, viewing = undefined) {
-  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
-  const { JzDiv, IzExp, Qexp, Qmul, ByQzw, SzF } = viewing[_zcam_setup];
-  const Mz = Cz / ByQzw;
-  const Sz = SzF * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
-  return { hz, Qz, Cz, Jz: Qz * ByQzw, Mz, Sz };
+  return zcam_extend ({ hz, Qz, Cz }, viewing);
 }
