@@ -259,6 +259,18 @@ export function zcam_ensure_Cz (zcam, viewing = undefined) {
   return zcam;
 }
 
+/// Ensure `zcam` contains Mz if missing.
+export function zcam_ensure_Mz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Mz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { ByQzw } = zcam.viewing[_zcam_setup];
+    zcam_ensure_Cz (zcam);
+    zcam.Mz = zcam.Cz / ByQzw;
+  }
+  return zcam;
+}
+
 /// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
 export function srgb_from_zcam_8bit (zcam, viewing) {
   const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
