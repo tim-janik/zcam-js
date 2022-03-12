@@ -170,7 +170,7 @@ export function Izazbz_from_zcam (zcam, viewing) {
   } else if (has (zcam.Jz)) {
     Jz = zcam.Jz;
     Iz = (Jz * JzDiv)**IzExp;
-    Qz = Qmul * Iz**Qexp;
+    Qz = Jz / ByQzw;
   } else
     zcam_missing ("Qz OR Jz");
   // Cz OR Sz OR Mz OR Vz OR Wz OR Kz
