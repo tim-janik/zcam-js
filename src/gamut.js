@@ -14,15 +14,17 @@ export class Gamut {
     this.minCz = NaN;
     this.maxCz = NaN;
   }
+  /// Calculate ZCAM perceptual color attributes from sRGB.
+  zcam (srgb) {
+    return Z.zcam_from_srgb (srgb);
+  }
   /// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
   contains (zcam) {
     const {r, g, b} = Z.linear_rgb_from_zcam (zcam, this.viewing);
     const inside = S.linear_rgb_inside_8bit_gamut ({r, g, b});
     return { r: S.srgb_companding (r), g: S.srgb_companding (g), b: S.srgb_companding (b), inside };
   }
-  zcam (srgb) {
-    return Z.zcam_from_srgb (srgb);
-  }
+  /// Find and cache cusps (Jz, Cz) for all hues.
   async cache_cusps (cfg = {}) {
     const fdump = cfg.fdump;
     if (this.Cz_spline) return;
