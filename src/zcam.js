@@ -150,13 +150,17 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   return xyz;
 }
 
+/// Check if `v` is numeric.
+function has (v) {
+  return !isNaN (v);
+}
+
 /// Construct Izazbz from ZCAM perceptual color attributes.
 export function Izazbz_from_zcam (zcam, viewing) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
   const { JzDiv, IzDiv, IzExp, ByQzw, Qmul, Qexp, Wpc, ByQzwF, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
-  const has = v => v !== undefined && !isNaN (v);
   let Iz, Jz, hz, Qz;
   // brightness OR lightness
   if (has (zcam.Qz)) {
