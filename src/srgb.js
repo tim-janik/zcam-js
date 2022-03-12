@@ -13,7 +13,7 @@ export function srgb_hex (rgb) {
   if (rgb.length > 3) {
     const a = (255 * rgb[3] + 0.5 |0).toString (16);
     const a0 = a.length > 1 ? a : '0' + a;
-    hex += a;
+    hex += a0;
   }
   return hex;
 }
