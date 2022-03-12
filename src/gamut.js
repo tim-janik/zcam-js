@@ -29,6 +29,19 @@ export class Gamut {
     const {r, g, b} = Z.linear_rgb_from_zcam (zcam, this.viewing);
     return S.linear_rgb_inside_8bit_gamut ({r, g, b});
   }
+  /// Find maximum Cz within gamut for `zcam` hue and lightness.
+  maximize_Cz (zcam, eps = 1e-3) {
+    zcam = Object.assign ({}, zcam);
+    return this._modify_maximize_Cz (zcam, eps);
+  }
+  // Ensure `zcam` contains needed fields and find maximum Cz.
+  _modify_maximize_Cz (zcam, eps) {
+    const viewing = this.viewing;
+    zcam = Z.zcam_ensure_Jz (zcam, viewing);
+    const { hz, Jz } = zcam;
+    const cz_inside_rgb = Cz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Jz, Cz }, viewing));
+    return M.bsearch_max (cz_inside_rgb, 0, this.maxCz || 101, eps);
+  }
   /// Find and cache cusps (Jz, Cz) for all hues.
   async cache_cusps (cfg = {}) {
     const fdump = cfg.fdump;
