@@ -237,6 +237,28 @@ export function zcam_ensure_Sz (zcam, viewing = undefined) {
   return zcam;
 }
 
+/// Ensure `zcam` contains Cz if missing.
+export function zcam_ensure_Cz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Cz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { ByQzw, ByQzwF } = zcam.viewing[_zcam_setup];
+    if (has (zcam.Mz))
+      zcam.Cz = zcam.Mz * ByQzw;
+    else if (has (zcam.Sz))
+      zcam.Cz = zcam_ensure_Qz (zcam).Qz * zcam.Sz * zcam.Sz * ByQzwF;
+    else if (has (zcam.Vz))
+      Cz = Math.sqrt ((zcam.Vz**2 - (zcam_ensure_Jz (zcam).Jz - 58)**2) * (1/3.4));
+    else if (has (zcam.Wz))
+      Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - zcam_ensure_Jz (zcam).Jz)**2);
+    else if (has (zcam.Kz))
+      Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - zcam_ensure_Jz (zcam).Jz**2) * (1.0 / 2**(3/2));
+    else
+      zcam_missing ("Cz OR Sz OR Mz OR Vz OR Wz OR Kz");
+  }
+  return zcam;
+}
+
 /// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
 export function srgb_from_zcam_8bit (zcam, viewing) {
   const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
