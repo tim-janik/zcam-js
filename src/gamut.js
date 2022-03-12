@@ -34,32 +34,33 @@ export class Gamut {
   /// Find maximum Sz within gamut for `zcam` hue and lightness.
   maximize_Sz (zcam, eps = 2e-3) {
     zcam = Object.assign ({}, zcam);
-    const Cz = this._modify_maximize_Cz (zcam, 0.5 * eps);
+    const Cz = this._mut_maximize_Cz (zcam, 0.5 * eps);
     const { hz, Jz, viewing } = zcam;
     return Z.zcam_ensure_Sz ({ hz, Jz, Cz, viewing }).Sz;
   }
   /// Find maximum Cz within gamut for `zcam` hue and lightness.
   maximize_Cz (zcam, eps = 1e-3) {
     zcam = Object.assign ({}, zcam);
-    return this._modify_maximize_Cz (zcam, eps);
+    return this._mut_maximize_Cz (zcam, eps);
   }
   // Ensure `zcam` contains needed fields and find maximum Cz.
-  _modify_maximize_Cz (zcam, eps) {
+  _mut_maximize_Cz (zcam, eps) {
     const viewing = this.viewing;
     zcam = Z.zcam_ensure_Jz (zcam, viewing);
     const { hz, Jz } = zcam;
     let hash, maxCz;
-    if (this.cached_Cz) {
-      const U16 = 1 << 16, hzw = U16 / 360, jzw = (U16 - 1) / 100;
-      hash = (Math.floor (hz * hzw) * U16 + Math.floor (Jz * jzw)) >>> 0;
-      maxCz = this.cached_Cz.get (hash >>> 0);
-      if (maxCz !== undefined)
-	return maxCz;
-    }
-    const cz_inside_rgb = Cz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Jz, Cz }, viewing));
-    maxCz = M.bsearch_max (cz_inside_rgb, 0, this.maxCz || 101, eps);
-    if (hash !== undefined)
-      this.cached_Cz.set (hash, maxCz);
+    const cz_inside = Cz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Jz, Cz }, viewing));
+    if (!this.cached_Cz)
+      return M.bsearch_max (cz_inside, 0, this.maxCz || 101, eps);
+    const U16 = 1 << 16, hzw = U16 / 360, jzw = (U16 - 1) / 100;
+    hash = (Math.floor (hz * hzw) * U16 + Math.floor (Jz * jzw)) >>> 0;
+    maxCz = this.cached_Cz.get (hash >>> 0);
+    if (maxCz !== undefined)
+      return maxCz;
+    const spline_hz = this._spline_hz (hz);
+    const cuspCz = this.Cz_spline.splint (spline_hz);
+    maxCz = M.bsearch_max (cz_inside, 0, cuspCz, 1e-3);
+    this.cached_Cz.set (hash, maxCz);
     return maxCz;
   }
   /// Find and cache cusps (Jz, Cz) for all hues.
@@ -129,11 +130,11 @@ export class Gamut {
       this.cached_Cz = new HT.Float64Table (1024, 1024 * 1024 * cache_Cz);
   }
   /// Shift `hz` into range approximated by splines.
-  _clamp_hz (hz) {
+  _spline_hz (hz) {
     const max_hue = this.extrema[this.extrema.length-1];
     while (hz > max_hue)
       hz -= 360;
-    while (hz < T.hue_extrema[0])
+    while (hz < this.extrema[0])
       hz += 360;
     return hz;
   }
@@ -143,10 +144,10 @@ export class Gamut {
     const cusp_epsilon = 1e-5;
     if (!this.Jz_spline)
       return Z.zcam_hue_find_cusp (hz, cusp_epsilon, 101, this.viewing);
-    hz = this._clamp_hz (hz);
-    const Jz = this.Jz_spline.splint (hz);
-    const Cz = this.Cz_spline.splint (hz);
-    return Z.zcam_extend ({ hz, Jz, Cz }, this.viewing);
+    const spline_hz = this._spline_hz (hz);
+    const Jz = this.Jz_spline.splint (spline_hz);
+    const Cz = this.Cz_spline.splint (spline_hz);
+    return { hz, Jz, Cz, viewing: this.viewing };
   }
 }
 
