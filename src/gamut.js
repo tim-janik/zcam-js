@@ -63,6 +63,13 @@ export class Gamut {
     this.cached_Cz.set (hash, maxCz);
     return maxCz;
   }
+  _cached_maximize_Cz (hz, Jz) {
+    if (!this.cached_Cz) return undefined;
+    const U16 = 1 << 16, hzw = U16 / 360, jzw = (U16 - 1) / 100;
+    const hash = (Math.floor (hz * hzw) * U16 + Math.floor (Jz * jzw)) >>> 0;
+    const maxCz = this.cached_Cz.get (hash >>> 0);
+    return maxCz;
+  }
   /// Find and cache cusps (Jz, Cz) for all hues.
   async cache_cusps (cfg = {}) {
     const fdump = cfg.fdump;
@@ -149,6 +156,35 @@ export class Gamut {
     const Cz = this.Cz_spline.splint (spline_hz);
     return { hz, Jz, Cz, viewing: this.viewing };
   }
+  /// Return `zcam` so Jz and Cz are within sRGB.
+  clamp_chroma (zcam, eps = 1e-3) {
+    const viewing = this.viewing;
+    const hz = zcam.hz;
+    // clamp Jz against black, white thresholds
+    let zcam1;
+    if (isNaN (zcam.Jz))
+      zcam = Z.zcam_ensure_Jz (zcam1 = Object.assign ({}, zcam), this.viewing);
+    const Jz = zcam.Jz;
+    if (Jz <= 0.0015)
+      return { hz, Jz: 0, Cz: 0, viewing };
+    if (Jz >= 99.9985)
+      return { hz, Jz: 100, Cz: 0, viewing };
+    // check chroma
+    if (isNaN (zcam.Cz))
+      zcam = Z.zcam_ensure_Cz (zcam1 ? zcam1 : zcam1 = Object.assign ({}, zcam), this.viewing);
+    let Cz = zcam.Cz;
+    if (Cz <= eps)
+      return { hz, Jz, Cz: 0, viewing };
+    // clamp Cz against cached values
+    const maxCz = this._cached_maximize_Cz (hz, Jz);
+    if (maxCz !== undefined)
+      return { hz, Jz, Cz: Math.min (maxCz, Cz), viewing };
+    // find Cz inside gamut
+    const cz_inside = Cz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Jz, Cz }, viewing));
+    if (!cz_inside (Cz))
+      Cz = this._mut_maximize_Cz ({ hz, Jz, Cz }, eps);
+    return { hz, Jz, Cz, viewing };
+  }
 }
 
 // == Spline fitting ==
@@ -182,11 +218,11 @@ function fit_spline_segments (xs, ys, segpointes, eps, pmax, fixed = [], fdump) 
 
 // == test ==
 async function test () {
+  const assert = await import ('assert');
   let FS = null;        // use module 'fs' to create gnuplot files
   //FS = await import ('fs');
   const rnd = (v, digits = 0) => Math.round (v * 10**digits) / 10**digits;
   const rnd2 = v => rnd (v, 2), rnd3 = v => rnd (v, 3);
-  const assert = await import ('assert');
   const g = new Gamut();
   let c = g.contains ({ Jz: 99, Sz: 43, hz: 258 });
   assert.deepEqual (c.inside, false); // not inside
@@ -202,6 +238,7 @@ async function test () {
   await g.cache_cusps ({
     fdump: FS ? fdump : null,
   });
+  assert.deepEqual (rnd2 (g.clamp_chroma ({ hz: 258, Cz: 42, Jz: 79.5 }).Cz), 20.07);
 
   if (FS)
     console.log (`plot "xg-jzf" with lines, "xg-jzs" with lines, "xg-jzp", "xg-czf" with lines, "xg-czs" with lines, "xg-czp", ${g.minCz}, ${g.maxCz}`);
