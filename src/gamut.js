@@ -4,6 +4,7 @@
 import * as M from './math.js';
 import * as S from './srgb.js';
 import * as Z from './zcam.js';
+import * as HT from './hashtable.js';
 
 export class Gamut {
   constructor (zcamviewingconditions = {}) {
@@ -13,6 +14,7 @@ export class Gamut {
     this.extrema = [];
     this.minCz = NaN;
     this.maxCz = NaN;
+    this.cached_Cz = null;
   }
   /// Calculate ZCAM perceptual color attributes from sRGB.
   zcam (srgb) {
@@ -46,8 +48,19 @@ export class Gamut {
     const viewing = this.viewing;
     zcam = Z.zcam_ensure_Jz (zcam, viewing);
     const { hz, Jz } = zcam;
+    let hash, maxCz;
+    if (this.cached_Cz) {
+      const U16 = 1 << 16, hzw = U16 / 360, jzw = (U16 - 1) / 100;
+      hash = (Math.floor (hz * hzw) * U16 + Math.floor (Jz * jzw)) >>> 0;
+      maxCz = this.cached_Cz.get (hash >>> 0);
+      if (maxCz !== undefined)
+	return maxCz;
+    }
     const cz_inside_rgb = Cz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Jz, Cz }, viewing));
-    return M.bsearch_max (cz_inside_rgb, 0, this.maxCz || 101, eps);
+    maxCz = M.bsearch_max (cz_inside_rgb, 0, this.maxCz || 101, eps);
+    if (hash !== undefined)
+      this.cached_Cz.set (hash, maxCz);
+    return maxCz;
   }
   /// Find and cache cusps (Jz, Cz) for all hues.
   async cache_cusps (cfg = {}) {
@@ -109,6 +122,11 @@ export class Gamut {
     // Cz maximum
     this.minCz = Array.from (this.Cz_spline.a).reduce ((p, n) => Math.min (p, n));
     this.maxCz = Array.from (this.Cz_spline.a).reduce ((p, n) => Math.max (p, n));
+
+    // Setup Cz cache
+    const cache_Cz = cfg.cache_Cz === undefined ? 4 : cfg.cache_Cz;
+    if (cache_Cz > 0)
+      this.cached_Cz = new HT.Float64Table (1024, 1024 * 1024 * cache_Cz);
   }
   /// Shift `hz` into range approximated by splines.
   _clamp_hz (hz) {
