@@ -126,7 +126,6 @@ function test_zcam () {
   for (let i = 1; i < tests.length; i++) {
     // prepare conditions
     const row = tests[i], zcam = results[i], eps = 0.02;
-    const zval = i => { const v = zcam[T[i]] === undefined ? zcam.zcond[T[i]] : zcam[T[i]]; return v === undefined ? NaN : v; };
     const verify = (zinput, xyz) => {
       const diff = [ xyz.x - row[0], xyz.y - row[1], xyz.z - row[2] ];
       const bad = !(Math.abs (diff[0]) < eps) || !(Math.abs (diff[1]) < eps) || !(Math.abs (diff[2]) < eps);

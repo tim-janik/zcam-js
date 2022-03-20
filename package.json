@@ -13,6 +13,29 @@
   "repository": "github:tim-janik/zcam-js.git",
   "type": "module",
   "scripts": {
+    "eslint": "npx eslint src/*.js",
     "test": "node src/check.js"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "env": {
+      "es2022": true,
+      "browser": true,
+      "node": true
+    },
+    "extends": [
+      "eslint:recommended"
+    ],
+    "rules": {
+      "no-loss-of-precision": "off",
+      "no-mixed-spaces-and-tabs": "off",
+      "no-unused-vars": "warn",
+      "no-constant-condition": "off"
+    }
+  },
+  "devDependencies": {
+    "eslint": "^8.10.0"
   }
 }

@@ -132,22 +132,22 @@ export class CubicSpline {
     return this.a[0];
   }
   splint_newint (t) {
+    function newint (x, x0, x1, y0, y1, sg0, sg1) { // 2020, Fast Cubic Spline Interpolation, Haysn Hornbeck
+      const h = (x1 - x0);
+      const wh = (x - x0);
+      const inv_h = 1. / h;
+      const bx = (x1 - x);
+      const h2 = h * h;			// 3 adds , 1 mult , 1 div
+      const lower = wh * y1 + bx * y0;
+      const C = (wh * wh - h2) * wh * sg1;
+      const D = (bx * bx - h2) * bx * sg0;	// 1 add , 2 subs , 8 mults
+      // 2 adds , 2 mult = 19 ops + 1 div
+      return (lower + /* (1/6)* */ (C + D)) * inv_h;
+    }
     const x = this.x;
     for (let i = x.length - 2; i >= 0; i--)
       if (x[i] <= t) {
 	return newint (t, x[i], x[i+1], this.a[i], this.a[i+1], this.sg[i], this.sg[i+1]);
-	function newint (x, x0, x1, y0, y1, sg0, sg1) { // 2020, Fast Cubic Spline Interpolation, Haysn Hornbeck
-	  const h = (x1 - x0);
-	  const wh = (x - x0);
-	  const inv_h = 1. / h;
-	  const bx = (x1 - x);
-	  const h2 = h * h;			// 3 adds , 1 mult , 1 div
-	  const lower = wh * y1 + bx * y0;
-	  const C = (wh * wh - h2) * wh * sg1;
-	  const D = (bx * bx - h2) * bx * sg0;	// 1 add , 2 subs , 8 mults
-	  // 2 adds , 2 mult = 19 ops + 1 div
-	  return (lower + /* (1/6)* */ (C + D)) * inv_h;
-	}
       }
     return this.a[0];
   }
@@ -195,7 +195,6 @@ export class CubicSpline {
 export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []) {
   // find largest ys diff
   function spline_maxdiff (cpx, cpy) {
-    const a = cpx[0], b = cpx[cpx.length-1];
     const spline = new CubicSpline (cpx, cpy);
     let x, y, dy = 0;
     for (let i = 0; i < xs.length; i++) {
