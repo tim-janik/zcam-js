@@ -158,45 +158,56 @@ export class Float64Table {
   }
 };
 
-async function test() {
+async function main (args) {
   const assert = await import ('assert');
-  const N = 999999;;
+  const performance = args.indexOf ('-p') >= 0 || args.indexOf ('--perf') >= 0;
   // performance
-  const { PerformanceObserver, performance: PF } = await import ('perf_hooks');
-  const PO = new PerformanceObserver (items => {
-    for (const item of items.getEntries())
-      console.log (item.name, item.duration);
-  });
-  PO.observe ({ type: 'measure' });
-  let ft = new Float64Table(), m = new Map();
-  PF.mark ("m0");
-  for (let i = 0; i < N; i++)
-    ft.set (i, 3+i*2);
-  PF.mark ("m1");
-  for (let i = 0; i < N; i++)
-    m.set (i, 3+i*2);
-  PF.mark ("m2");
-  PF.measure ("Float64Table inserts", "m0", "m1");
-  PF.measure ("Nodejs Map() inserts", "m1", "m2");
-  PF.mark ("l0");
-  for (let i = 0; i < N; i++)
-    assert.deepEqual (ft.get (i), 3+i*2);
-  PF.mark ("l1");
-  for (let i = 0; i < N; i++)
-    assert.deepEqual (m.get (i), 3+i*2);
-  PF.mark ("l2");
-  PF.measure ("Float64Table lookups", "l0", "l1");
-  PF.measure ("Nodejs Map() lookups", "l1", "l2");
+  if (performance) {
+    const N = 1000000;
+    const { PerformanceObserver, performance: PF } = await import ('perf_hooks');
+    const PO = new PerformanceObserver (items => {
+      for (const item of items.getEntries())
+	console.log (item.name, item.duration);
+    });
+    PO.observe ({ type: 'measure' });
+    const ft = new Float64Table(), m = new Map();
+    PF.mark ("m0");
+    for (let i = 0; i < N; i++)
+      ft.set (i, 3+i*2);
+    PF.mark ("m1");
+    for (let i = 0; i < N; i++)
+      m.set (i, 3+i*2);
+    PF.mark ("m2");
+    PF.measure ("Float64Table inserts", "m0", "m1");
+    PF.measure ("Nodejs Map() inserts", "m1", "m2");
+    PF.mark ("l0");
+    for (let i = 0; i < N; i++)
+      assert.deepEqual (ft.get (i), 3+i*2);
+    PF.mark ("l1");
+    for (let i = 0; i < N; i++)
+      assert.deepEqual (m.get (i), 3+i*2);
+    PF.mark ("l2");
+    PF.measure ("Float64Table lookups", "l0", "l1");
+    PF.measure ("Nodejs Map() lookups", "l1", "l2");
+    assert.deepEqual (array_from (m), array_from (ft));
+    assert.deepEqual (array_from (m.entries()), array_from (ft.entries()));
+    console.log (`Hashtable Items: ${N}`);
+    for (const e of PF.getEntriesByType ('measure'))
+      console.log (`${e.name}: ${e.duration}`);
+  }
   function array_from (map) {
     const arr = Array.from (map);
     return arr.sort ((p,n) => p[0] - n[0]);
   }
-  assert.deepEqual (array_from (m), array_from (ft));
-  assert.deepEqual (array_from (m.entries()), array_from (ft.entries()));
   // test behaviour
+  const N = 9999;;
+  const ft = new Float64Table();
+  const f1 = i => 2 + i * 0.17;
+  for (let i = 0; i < N; i++)
+    ft.set (i, f1 (i));
   let cond = i => (i%7 <3) || (i%47 >= 42) || (i > 100 && i < 330);
   for (let i = -(N/2 | 0); i < 1.5 * N; i++)
-    assert.deepEqual (ft.get (i), i<0 || i>=N ? undefined : 3+i*2);
+    assert.deepEqual (ft.get (i), i<0 || i>=N ? undefined : f1 (i));
   for (let i = 0; i < N; i++)
     if (cond (i))
       ft.delete (i);
@@ -204,10 +215,10 @@ async function test() {
     if (cond (i))
       assert.deepEqual (ft.get (i), undefined); // deleted
     else
-      assert.deepEqual (ft.get (i), i<0 || i>=N ? undefined : 3+i*2); // never inserted
+      assert.deepEqual (ft.get (i), i<0 || i>=N ? undefined : f1 (i)); // never inserted
   }
   const mix = i => (1664525 * i + 1013904223) >>> 0;
-  ft = new Float64Table();
+  ft.clear (0);
   for (let i = 0; i < N; i++)
     ft.set (mix (i), i + 1);
   for (let i = N; i < 3*N; i++)
@@ -222,9 +233,9 @@ async function test() {
       assert.deepEqual (ft.get (mix (i)), i < N ? i + 1 : i >= N ? i * 2 : undefined);
   }
   // randomized testing
+  const m = new Map();
   const R = 19999;
   ft.clear();
-  m.clear();
   for (let i = 0; i < R; i++) { // insert with random keys
     const k = (1664525 * i + 1013904223) >>> 0;
     const r = Math.random() * 100;
@@ -243,5 +254,6 @@ async function test() {
   assert.deepEqual (ft.size, m.size);
   assert.deepEqual (array_from (m), array_from (ft));
 }
+
 if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
-  await test();
+  process.exit (await main (process.argv.splice (2)));
