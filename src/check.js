@@ -68,91 +68,9 @@ function test_chromatic_adaptation () {
   assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values ({ x: 50, y: 70, z: 60 }));
 }
 
-// == zcam.js tests ==
-function test_zcam () {
-  const verbose = false;
-  // ZCAM
-  const NA = NaN; // not applicable
-  const E = [ NA, NA,  NA,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   NA,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
-  const tests = [
-    /*T*/ [ "X", "Y", "Z", "Xw", "Yw", "Zw", "Fs", "La", "Yb", "FL", "Fb", "Iz", "az", "bz", "hz", "Hz", "Qz", "Jz", "Mz", "Cz", "Sz", "Vz", "Kz", "Wz" ],
-    /*1*/ [ 185, 206, 163, 256, 264, 202, Z.ZCAM_AVERAGE, 264, 100, 1.0970, 0.6155, 0.3947, -0.0165, -0.0048, 196.3524, 237.6401, 321.3464, 92.2520, 10.5252, 3.0216, 19.1314, 34.7022, 25.2994, 91.6837 ],
-    /*2*/ [ 89, 96, 120, 256, 264, 202, Z.ZCAM_AVERAGE, 264, 100, 1.0970, 0.6155, 0.3163, -0.0166, -0.0472, 250.6422, 307.0595, 248.0394, 71.2071, 23.8744, 6.8539, 32.7963, 18.2796, 40.4621, 70.4026 ],
-    /*3*/ [ 79, 81, 62, 256, 264, 202, Z.ZCAM_DIM, 150*0 + 264, 60*0 + 100, 1.0970, 0.6155, 0.2913, 0.0018, 0.0029, 58.7532, 43.8258, 196.7686, 68.8890, 2.7918, 0.9774, 12.5916, 11.0371, 44.4143, 68.8737 ],
-    /*4*/ [ 910, 1114, 500, 2103, 2259, 1401, Z.ZCAM_DARK, 359, 16, 1.2153, 0.0842, 0.6190, -0.0320, 0.0475, 123.9464, 178.6422, 114.7431, 82.6445, 18.1655, 13.0838, 44.7277, 34.4874, 26.8778, 78.2653 ],
-    /*5*/ [ 96, 67, 28, 2103, 2259, 1401, Z.ZCAM_DARK, 359, 16, 1.2153, 0.0842, 0.2749, 0.0765, 0.0437, 389.7720 -360, 397.3301, 45.8363, 33.0139, 26.9446, 19.4070, 86.1882, 43.6447, 47.9942, 30.2593 ],
-    // Test values (1)-(5) are from "Supplementary document for ZCAM": https://doi.org/10.6084/m9.figshare.13640927.v2
-    // About Kz) given ZCAM paper formula (18) for Kz and ZCAM supplement test values for Jz and Cz, the fractional digits of Kz are not plausible
-    // About 3) La & Yb are reset to coefficients from tests (1) and (2) for the results to make sense
-    // About 5) hz is adjusted to stay within 0…360
-  ];
-  const T = tests[0], results = [];
-  const pad = (s,n = 8) => (s + "").padEnd (n), num = (v,n = 17) => pad (v.toPrecision (12), n);
-  const wsign = s => s[0] == "-" ? s : " " + s, dfmt = n => wsign (n.toFixed (9));
-  // zcam_from_xyz
-  for (let i = 1; i < tests.length; i++) {
-    // prepare conditions
-    const row = tests[i], diffs = [];
-    const zcond = { Xw: row[3], Yw: row[4], Zw: row[5], Fs: row[6], La: row[7], Yb: row[8], strict: true };
-    // calc test
-    const xyz = { x: row[0], y: row[1], z: row[2] }, zcam = results[i] = Z.zcam_from_xyz (xyz, zcond);
-    // calc diffs
-    const zval = i => { const v = zcam[T[i]] === undefined ? zcond[T[i]] : zcam[T[i]]; return v === undefined ? NaN : v; };
-    let bad = 0;
-    for (let j = 0; j < row.length; j++) {
-      diffs[j] = row[j] - zval (j);
-      bad += !isNaN (E[j]) && !(Math.abs (diffs[j]) < 10**E[j]);
-    }
-    if (!bad && !verbose) continue;
-    // print
-    console.log (bad ? "FAIL:" : "OK:", "zcam_from_xyz():");
-    console.log (i + ") XYZ:", [row[0], row[1], row[2]], "     [-Diffs-]");
-    for (let j = 9; j < row.length; j++) {
-      const bad = Math.abs (diffs[j]) < 10**E[j] ? '' : " **BAD** (" + row[j] + ")";
-      console.log ("  ", pad (T[j] + ":", 4), num (zval (j)), "  " + dfmt (diffs[j]) + bad);
-    }
-    assert.deepEqual (bad, false);
-  }
-  // xyz_from_zcam
-  for (let i = 1; i < tests.length; i++) {
-    // prepare conditions
-    const row = tests[i], zcam = results[i], eps = 0.02;
-    const verify = (zinput, xyz) => {
-      const diff = [ xyz.x - row[0], xyz.y - row[1], xyz.z - row[2] ];
-      const bad = !(Math.abs (diff[0]) < eps) || !(Math.abs (diff[1]) < eps) || !(Math.abs (diff[2]) < eps);
-      if (!bad && !verbose) return;
-      console.log (bad ? "FAIL:" : "OK:", "xyz_from_zcam():");
-      console.log ('xyz=', xyz, '\ndiff=', diff, '\nzinput', zinput, '\nzcam=', zcam);
-      assert.deepEqual (bad, false);
-    };
-    for (const lightness of ['Jz', 'Qz']) { // Qz OR Jz
-      for (const chroma of ['Cz', 'Sz', 'Mz', 'Vz', 'Wz', 'Kz']) {
-	const zinput = { hz: zcam.hz, viewing: zcam.viewing };
-	zinput[lightness] = zcam[lightness];
-	zinput[chroma] = zcam[chroma];
-	verify (zinput, Z.xyz_from_zcam (zinput));
-      }
-    }
-  }
-  // ZCAM and sRGB tests
-  assert.deepEqual ('#faebde', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#faebde'))));
-  assert.deepEqual ('#071adc', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#071adc'))));
-  assert.deepEqual ('#23be7c', S.srgb_hex (Z.srgb_from_zcam (Z.zcam_from_srgb ('#23be7c'))));
-  // ZCAM hue tests
-  const o_rnd1 = o => {
-    const r = {};
-    for (const k in o)
-      if ('number' == typeof o[k])
-	r[k] = rnd (o[k], 1);
-    return r;
-  };
-  const cusp_259 = { hz: 259, Qz: 79.4, Cz: 42.6, Jz: 49.1, Mz: 68.8, Sz: 81.0 };
-  assert.deepEqual (o_rnd1 (Z.zcam_hue_find_cusp (259, 1e-2)), cusp_259);
-}
 
 // Run unit tests
 test_srgb();
 test_jzazbz();
 test_chromatic_adaptation();
-test_zcam();
 console.log ("OK:", process.argv[1]);
