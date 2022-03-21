@@ -14,7 +14,7 @@
   "type": "module",
   "scripts": {
     "eslint": "npx eslint src/*.js",
-    "test": "node src/math.js && node src/check.js && node src/hashtable.js"
+    "test": "node src/math.js && node src/check.js && node src/hashtable.js && node src/zcam.js"
   },
   "eslintConfig": {
     "parserOptions": {
