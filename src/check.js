@@ -13,15 +13,6 @@ const rnd = (v, digits = 0) => Math.round (v * 10**digits) / 10**digits;
 const rnd2 = v => rnd (v, 2), rnd3 = v => rnd (v, 3);
 const rnd5 = v => rnd (v, 5), rnd7 = v => rnd (v, 7);
 
-// === math.js tests ==
-function test_math () {
-  assert.deepEqual (rnd5 (M.bsearch_max (x => x <= 1, -5, +5)), 1.0);
-  let o = M.gss_min (x => (x + 1)**2 + 2, -5, +5, 5e-6);
-  assert.deepEqual ([o.a, o.b].map (rnd5), [-1, -1]);
-  o = M.gss_max (x => 7 - (x - 1)**2, -5, +5, 5e-6);
-  assert.deepEqual ([o.a, o.b].map (rnd5), [+1, +1]);
-}
-
 // == srgb.js tests ==
 function test_srgb () {
   assert.deepEqual (S.srgb_hex ([1, 1, 1]), '#ffffff');
@@ -154,7 +145,6 @@ function test_zcam () {
 }
 
 // Run unit tests
-test_math();
 test_srgb();
 test_jzazbz();
 test_chromatic_adaptation();

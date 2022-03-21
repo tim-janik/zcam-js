@@ -44,14 +44,13 @@ export function sgn (x) {
 
 /// Find largest position (within `eps`) in `[vmin…vmax]` for which `predicate()` is true.
 export function bsearch_max (predicate, vmin, vmax, eps = 1e-5) {
-  let v;
-  for (v = (vmax + vmin) * 0.5; Math.abs (vmax - vmin) > eps; v = (vmax + vmin) * 0.5) {
+  for (let v = (vmax + vmin) * 0.5; Math.abs (vmax - vmin) >= eps; v = (vmax + vmin) * 0.5) {
     if (predicate (v))
       vmin = v;
     else
       vmax = v;
   }
-  return v;
+  return vmin; // vmax and v have *not* passed predicate() test
 }
 
 // Golden-Section Search
@@ -106,8 +105,22 @@ export function gss_min (f, a, b, eps = 1e-5) {
  * 2020, https://github.com/gscalzo/SwiftCubicSpline/blob/master/Sources/SwiftCubicSpline/CubicSpline.swift
  */
 export class CubicSpline {
-  constructor (xs = [], ys = []) {
-    this.setup (xs, ys);
+  constructor (xs = undefined, ys = undefined) {
+    this.segments = [];
+    if (Array.isArray (xs) && ys === undefined)
+      this.from_segments (xs);
+    else if (Array.isArray (xs) && Array.isArray (ys))
+      this.setup (xs, ys);
+    else
+      this.setup ([], []);
+  }
+  reset () {
+    this.segments = [];
+    this.x = this.a = this.b = this.sg = this.d = null;
+    this.setup ([], []);
+  }
+  setup (xs, ys) {
+    this.add_segment (xs, ys);
   }
   splint (t) { return this.splint_newint (t); }
   splint_forsythe (t) {
@@ -151,15 +164,15 @@ export class CubicSpline {
       }
     return this.a[0];
   }
-  setup (xs, ys) {
-    if (xs.length !== ys.length)
-      throw 'CubicSpline: setup: mismatching xs/ys values';
+  add_segment (xs, ys) {
+    if (xs.length > ys.length)
+      throw new Error ('CubicSpline: setup: mismatching xs/ys values');
     const npoints = xs.length;
-    const x = this.x = new Float64Array (xs);		// this.y == S(x)
-    const a = this.a = ys.length ? new Float64Array (ys) : new Float64Array (1);
-    const b = this.b = new Float64Array (npoints);
-    const sg = this.sg = new Float64Array (npoints);
-    const d = this.d = new Float64Array (npoints);
+    const x = new Float64Array (xs);		// this.y == S(x)
+    const a = ys.length ? new Float64Array (ys) : new Float64Array (1);
+    const b = new Float64Array (npoints);
+    const sg = new Float64Array (npoints);
+    const d = new Float64Array (npoints);
 
     if (npoints <= 1) return;
     const nm1 = npoints - 1;
@@ -169,7 +182,10 @@ export class CubicSpline {
     sg[0] = 0
     d[0] = x[1] - x[0];
     for (let i = 1; i < nm1; i++) {
-      d[i] = x[i + 1] - x[i];				// == Forsythe:DO10:D(I) == Sedgewick:for3:u[i]
+      const delta_x = x[i + 1] - x[i];
+      if (!(delta_x > 0))
+	throw new Error ('Control point x values must be increasing: i=' + i + ' x[i]=' + x[i] + ' x[i+1]=' + x[i+1]);
+      d[i] = delta_x;					// == Forsythe:DO10:D(I) == Sedgewick:for3:u[i]
       const diag = 2 * (x[i + 1] - x[i - 1]);		// == Forsythe:DO10:B(I) == Sedgewick:for2:d[i]
       const d1y0 = a[i] - a[i - 1], d1y1 = a[i + 1] - a[i];
       const d2ydx = d1y1 / d[i] - d1y0 / d[i - 1];	// == Forsythe:DO10:C(I) == Sedgewick:for4:w[i]/6
@@ -186,8 +202,49 @@ export class CubicSpline {
       const sg22 = sg[i + 1] + 2 * sg[i];
       b[i] = d1y1 / d[i] - d[i] * sg22;			// == Forsythe:DO40:B(I) == S'(x)
       d[i] = (sg[i + 1] - sg[i]) / d[i];		// == Forsythe:DO40:D(i) == S'''(x)/6
-      // this.c[i + 1] = sg[i + 1] * 3;			// == Forsythe:DO40:C(I) == S''(x)/6 == SIGMA * 3
+      // c[i + 1] = sg[i + 1] * 3;			// == Forsythe:DO40:C(I) == S''(x)/6 == SIGMA * 3
     }
+
+    const olength = this.x?.length || 0;
+    const seg = { x, a, b, sg, d };
+    if (olength && x[0] >= this.x[olength-1]) {
+      for (const field of Object.keys (seg)) {
+	const old = this[field];
+	this[field] = new Float64Array (olength + seg[field].length);
+	this[field].set (old, 0);
+	this[field].set (seg[field], olength);
+      }
+      this.segments.push (seg.x.length);
+    } else if (olength) { // prepend segment
+      for (const field of Object.keys (seg)) {
+	const old = this[field];
+	this[field] = new Float64Array (seg[field].length + olength);
+	this[field].set (seg[field], 0);
+	this[field].set (old, seg[field].length);
+      }
+      this.segments.unshift (seg.x.length);
+    } else {
+      Object.assign (this, seg);
+      this.segments = [ seg.x.length ];
+    }
+  }
+  to_segments() {
+    let array = [], offset = 0;
+    for (const seg of this.segments) {
+      const xs = [], ys = [];
+      for (let i = 0; i < seg; i++) {
+	xs.push (this.x[offset + i]);
+	ys.push (this.a[offset + i]);
+      }
+      offset += seg;
+      array.push ({ xs, ys });
+    }
+    return array;
+  }
+  from_segments (segments) {
+    this.reset();
+    for (const seg of segments)
+       this.add_segment (seg.xs, seg.ys);
   }
 }
 
@@ -213,7 +270,7 @@ export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []
   cp.push ([ xs[0], ys[0] ]);
   if (fixed)
     for (const [i,x] of xs.entries())
-      if (fixed.indexOf (x) >= 0)
+      if (i > 0 && i < nm1 && fixed.indexOf (x) >= 0)
 	cp.push ([ x, ys[i] ]);
   cp.push ([ xs[nm1], ys[nm1] ]);
   // add control points while diff exceeds eps
@@ -225,3 +282,16 @@ export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []
     cp.push ([x, y]);
   }
 }
+
+// === tests ==
+async function main (args) {
+  const assert = await import ('assert');
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd5 = v => rnd (v, 5);
+  assert.deepEqual (rnd3 (bsearch_max (x => x <= 1, -5, +5)), 1.0);
+  let o = gss_min (x => (x + 1)**2 + 2, -5, +5, 5e-6);
+  assert.deepEqual ([o.a, o.b].map (rnd5), [-1, -1]);
+  o = gss_max (x => 7 - (x - 1)**2, -5, +5, 5e-6);
+  assert.deepEqual ([o.a, o.b].map (rnd5), [+1, +1]);
+}
+if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+  process.exit (await main (process.argv.splice (2)));
