@@ -108,3 +108,27 @@ const one_lrgb = srgb_eotf (one_srgb);
 export function linear_rgb_inside_8bit_gamut ({r, g, b}) {
   return r > zero_lrgb && r < one_lrgb && g > zero_lrgb && g < one_lrgb && b > zero_lrgb && b < one_lrgb;
 }
+
+// == tests ==
+async function main (args) {
+  const assert = await import ('assert');
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3);
+  assert.deepEqual (srgb_hex ([1, 1, 1]), '#ffffff');
+  assert.deepEqual (srgb_hex ([0, 0, 0, 1]), '#000000ff');
+
+  assert.deepEqual (srgb_from ('#fff'), [1, 1, 1]);
+  assert.deepEqual (srgb_from ('#ffffff'), [1, 1, 1]);
+  assert.deepEqual (srgb_from (0xfffffff), [1, 1, 1]);
+  assert.deepEqual (srgb_from ([0.5, 0.5, 0.5]), [0.5, 0.5, 0.5]);
+  assert.deepEqual (srgb_from (0x0000000), [0, 0, 0]);
+  assert.deepEqual (srgb_from ('#000000'), [0, 0, 0]);
+  assert.deepEqual (srgb_from ('#000'), [0, 0, 0]);
+
+  assert.deepEqual (srgb_to_linear (srgb_from_linear ({ r: 0, g: 0, b: 0 })), { r: 0, g: 0, b: 0 });
+  assert.deepEqual (srgb_to_linear (srgb_from_linear ({ r: 1, g: 1, b: 1 })), { r: 1, g: 1, b: 1 });
+  assert.deepEqual (srgb_from_linear (srgb_to_linear ([0, 0, 0])), [0, 0, 0]);
+  assert.deepEqual (srgb_from_linear (srgb_to_linear ([1, 1, 1])).map (v => rnd (v, 7)), [1, 1, 1]);
+  assert.deepEqual (srgb_from_linear ({ r: 0.051, g: 0.214, b: 0.523 }).map (rnd3), [0.25, 0.5, 0.75]);
+}
+if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+  process.exit (await main (process.argv.splice (2)));
