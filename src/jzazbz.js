@@ -154,3 +154,28 @@ export function xyz_from_Izazbz ({ Iz, az, bz }) {
   const Y = 1/Jzazbz_g * (Y_ + (Jzazbz_g-1) * X);
   return { x: X, y: Y, z: Z };
 }
+
+// == tests ==
+async function main () {
+  const assert = await import ('assert');
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd7 = v => rnd (v, 7);
+  // Luo, Ming; Safdar, Muhammad; Cui, Guihua; Kim, Youn Jin; osa, figshare admin (2017): JzAzBz.m. Optica Publishing Group. Software. https://doi.org/10.6084/m9.figshare.5016299.v1
+  assert.deepEqual (Object.values (xyz_from_Jzazbz (Jzazbz_from_xyz ({ x: 0.1, y: 0.2, z: 0.3 }))).map (rnd7), [0.1,0.2,0.3]);
+  assert.deepEqual (Object.values (Jzazbz_from_xyz ({x:1, y:1, z:1})).map (rnd7), [0.0177797, 0.0023111, 0.0018745]);
+  assert.deepEqual (Object.values (xyz_from_Jzazbz ({j:1, a:0.1, b:0.1})).map (rnd7), [11746.8716779, 9137.2585481, 5280.241668]);
+  assert.deepEqual ('#ff00ff', S.srgb_hex (srgb_from_Jzazbz (Jzazbz_from_srgb ('#ff00ff'))));
+  assert.deepEqual ('#ffff00', S.srgb_hex (srgb_from_Jzazbz (Jzazbz_from_srgb ('#ffff00'))));
+  assert.deepEqual ('#00ffff', S.srgb_hex (srgb_from_Jzazbz (Jzazbz_from_srgb ('#00ffff'))));
+  // test results from JzAzBz.m
+  const xyz_red   = { x: 41.23865632529917,  y: 21.263682167732384, z:  1.9330620152483986 };
+  const xyz_green = { x: 35.759149092062536, y: 71.51829818412507,  z: 11.919716364020845 };
+  const xyz_blue  = { x: 18.045049120356367, y:  7.218019648142547, z: 95.03725870054353 };
+  assert.deepEqual (Object.values (Jzazbz_from_xyz (xyz_red)).map (rnd7),   [ 0.0989666,  0.0996457,  0.0912348 ]);
+  assert.deepEqual (Object.values (Jzazbz_from_xyz (xyz_green)).map (rnd7), [ 0.1318698, -0.0928627,  0.1005678 ]);
+  assert.deepEqual (Object.values (Jzazbz_from_xyz (xyz_blue)).map (rnd7),  [ 0.0692379, -0.0309179, -0.1563231 ]);
+  // Izazbz
+  assert.deepEqual (Object.values (xyz_from_Izazbz (Izazbz_from_xyz ({ x: 0.1, y: 0.2, z: 0.3 }))).map (rnd7), [0.1, 0.2, 0.3]);
+  assert.deepEqual (Object.values (Izazbz_from_xyz ({ x: 1, y: 1, z: 1 })).map (rnd7), [0.0390851, 0.0023111, 0.0018745]);
+}
+if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+  process.exit (await main (process.argv.splice (2)));
