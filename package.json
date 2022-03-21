@@ -14,7 +14,7 @@
   "type": "module",
   "scripts": {
     "eslint": "npx eslint src/*.js",
-    "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/zcam.js' 'node src/check.js' "
+    "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/zcam.js' 'node src/check.js' 'node src/adaptation.js'"
   },
   "eslintConfig": {
     "parserOptions": {
