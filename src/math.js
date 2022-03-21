@@ -282,3 +282,16 @@ export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []
     cp.push ([x, y]);
   }
 }
+
+// === tests ==
+async function main (args) {
+  const assert = await import ('assert');
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd5 = v => rnd (v, 5);
+  assert.deepEqual (rnd3 (bsearch_max (x => x <= 1, -5, +5)), 1.0);
+  let o = gss_min (x => (x + 1)**2 + 2, -5, +5, 5e-6);
+  assert.deepEqual ([o.a, o.b].map (rnd5), [-1, -1]);
+  o = gss_max (x => 7 - (x - 1)**2, -5, +5, 5e-6);
+  assert.deepEqual ([o.a, o.b].map (rnd5), [+1, +1]);
+}
+if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+  process.exit (await main (process.argv.splice (2)));
