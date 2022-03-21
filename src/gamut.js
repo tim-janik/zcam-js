@@ -217,10 +217,10 @@ function fit_spline_segments (xs, ys, segpointes, eps, pmax, fixed = [], fdump) 
 }
 
 // == test ==
-async function test () {
+async function main (args) {
   const assert = await import ('assert');
-  let FS = null;        // use module 'fs' to create gnuplot files
-  //FS = await import ('fs');
+  const plot = args.indexOf ('--plot') >= 0;
+  const FS = !plot ? null : await import ('fs');	// use module 'fs' to create gnuplot files
   const rnd = (v, digits = 0) => Math.round (v * 10**digits) / 10**digits;
   const rnd2 = v => rnd (v, 2), rnd3 = v => rnd (v, 3);
   const g = new Gamut();
@@ -243,7 +243,5 @@ async function test () {
   if (FS)
     console.log (`plot "xg-jzf" with lines, "xg-jzs" with lines, "xg-jzp", "xg-czf" with lines, "xg-czs" with lines, "xg-czp", ${g.minCz}, ${g.maxCz}`);
 }
-
-// nodejs __main__ check
 if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
-  await test();
+  process.exit (await main (process.argv.splice (2)));
