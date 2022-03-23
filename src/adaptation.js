@@ -68,3 +68,21 @@ export const LPLV_CAT = {
   M: [ [ 1.007245, 0.011136, -0.018381], [-0.318061, 1.314589,  0.003471], [0, 0, 1] ],
   I: [ [9.901584949593542e-1, -8.387720420502049e-3, 1.822921707342745e-2],
        [2.3956597922641e-1,    7.586646421469635e-1, 1.770137291268533e-3], [0, 0, 1] ] };
+
+// == tests ==
+async function main (args) {
+  const assert = await import ('assert');
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd7 = v => rnd (v, 7);
+  const xyz_ref = { x: 95.0429, y: 100, z: 108.89 };
+  const xyz_100 = { x: 100, y: 100, z: 100 };
+  let xyz_dest = xyz_chromatic_adaptation (xyz_100, xyz_100, xyz_ref);
+  assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values (xyz_ref));
+  xyz_dest = xyz_chromatic_adaptation_invert (xyz_ref, xyz_ref, xyz_100);
+  assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values (xyz_100));
+  const xyz_918 = { x: 96.42, y: 100, z: 82.49 }, D = 0.98765;
+  xyz_dest = xyz_chromatic_adaptation ({ x: 50, y: 70, z: 60 }, xyz_918, xyz_ref, D);
+  xyz_dest = xyz_chromatic_adaptation_invert (xyz_dest, xyz_ref, xyz_918, D);
+  assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values ({ x: 50, y: 70, z: 60 }));
+}
+if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+  process.exit (await main (process.argv.splice (2)));
