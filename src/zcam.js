@@ -299,8 +299,11 @@ export function srgb_from_zcam_8bit (zcam, viewing) {
 }
 
 /// Find chroma maximum for hue and brightness that satisfies `rgb_inside_gamut()`.
-export function zcam_hue_maximize_Cz (hz, Qz, eps = 1e-3, maxCz = 101, viewing = undefined) {
-  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+export function zcam_maximum_Cz (zcam, eps = 1e-3, maxCz = 101, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  if (isNaN (zcam.Qz))
+    zcam = zcam_ensure_Qz (Object.assign ({}, zcam), viewing);
+  const hz = zcam.hz, Qz = zcam.Qz;
   const cz_inside_rgb = Cz => S.rgb_inside_gamut (linear_rgb_from_zcam ({ hz, Qz, Cz }, viewing));
   return M.bsearch_max (cz_inside_rgb, 0, maxCz, eps);
 }
@@ -311,7 +314,7 @@ export function zcam_hue_find_cusp (hz, eps = 1e-3, maxCz = 101, viewing = undef
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
   const { JzDiv, IzExp, Qexp, Qmul } = viewing[_zcam_setup];
   const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
-  const hue_maximize_Cz = qz => zcam_hue_maximize_Cz (hz, qz, eps, maxCz, viewing);
+  const hue_maximize_Cz = Qz => zcam_maximum_Cz ({ hz, Qz }, eps, maxCz, viewing);
   const { x: Qz, y: Cz } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
   return zcam_extend ({ hz, Qz, Cz }, viewing);
 }
