@@ -20,14 +20,22 @@ export function srgb_hex (rgb) {
 
 /// Create sRGB array from color string, integer or vector `[ 0…1, 0…1, 0…1 ]`
 export function srgb_from (srgb) {
+  // array
   if (Array.isArray (srgb))
     return srgb;
-  if ('number' === typeof srgb) {
+  // number
+  const otype = typeof srgb;
+  if ('number' === otype) {
     const r = ((srgb | 0) & 0xff0000) >> 16;
     const g = ((srgb | 0) & 0xff00) >> 8;
     const b = (srgb | 0) & 0xff;
     return [r / 255.0, g / 255.0, b / 255.0];
   }
+  // object {r, g, b}
+  if ('object' == otype) {
+    return [srgb.r, srgb.g, srgb.b];
+  }
+  // string
   const offset = srgb.substr (0, 1) == '#' ? 1 : 0;
   if (srgb.length - offset >= 6)
     {
@@ -78,4 +86,25 @@ export function srgb_to_linear (srgb) {
 /// Convert linear RGB object to companded sRGB array via srgb_companding()
 export function srgb_from_linear ({r, g, b}) {
   return [srgb_companding (r), srgb_companding (g), srgb_companding (b)];
+}
+
+/// Check if RGB object is exactly with `[0…1]` range per channel.
+export function rgb_inside_gamut ({r, g, b}) {
+  return r >= 0.0 && r <= 1.0 && g >= 0.0 && g <= 1.0 && b >= 0.0 && b <= 1.0;
+}
+
+const zero_srgb = - 1 / 255 / 2;
+const one_srgb = 1 + 1 / 255 / 2;
+
+/// Check if rounded sRGB object is within sRGB gamut with 8bit channel width.
+export function srgb_inside_8bit_gamut ({r, g, b}) {
+  return r > zero_srgb && r < one_srgb && g > zero_srgb && g < one_srgb && b > zero_srgb && b < one_srgb;
+}
+
+const zero_lrgb = srgb_eotf (zero_srgb);
+const one_lrgb = srgb_eotf (one_srgb);
+
+/// Check if rounded linear RGB object is within sRGB gamut with 8bit channel width.
+export function linear_rgb_inside_8bit_gamut ({r, g, b}) {
+  return r > zero_lrgb && r < one_lrgb && g > zero_lrgb && g < one_lrgb && b > zero_lrgb && b < one_lrgb;
 }

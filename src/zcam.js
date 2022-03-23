@@ -4,6 +4,7 @@
 import * as M from './math.js';
 import * as A from './adaptation.js';
 import * as J from './jzazbz.js';
+import * as S from './srgb.js';
 
 const deg2rad = Math.PI / 180;
 const rad2deg = 180 / Math.PI;
@@ -126,7 +127,8 @@ export function srgb_from_zcam (zcam, viewing = undefined) {
   return J.srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
 }
 
-function linear_rgb_from_zcam (zcam, viewing = undefined) {
+/// Construct linear RGB object from ZCAM perceptual color attributes.
+export function linear_rgb_from_zcam (zcam, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
   const { D, ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y) {
@@ -148,13 +150,17 @@ export function xyz_from_zcam (zcam, viewing = undefined) {
   return xyz;
 }
 
+/// Check if `v` is numeric.
+function has (v) {
+  return !isNaN (v);
+}
+
 /// Construct Izazbz from ZCAM perceptual color attributes.
 export function Izazbz_from_zcam (zcam, viewing) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
   const { JzDiv, IzDiv, IzExp, ByQzw, Qmul, Qexp, Wpc, ByQzwF, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
-  const has = v => v !== undefined && !isNaN (v);
   let Iz, Jz, hz, Qz;
   // brightness OR lightness
   if (has (zcam.Qz)) {
@@ -164,7 +170,7 @@ export function Izazbz_from_zcam (zcam, viewing) {
   } else if (has (zcam.Jz)) {
     Jz = zcam.Jz;
     Iz = (Jz * JzDiv)**IzExp;
-    Qz = Qmul * Iz**Qexp;
+    Qz = Jz / ByQzw;
   } else
     zcam_missing ("Qz OR Jz");
   // Cz OR Sz OR Mz OR Vz OR Wz OR Kz
@@ -197,34 +203,107 @@ export function Izazbz_from_zcam (zcam, viewing) {
   return {Iz, az, bz};
 }
 
-/// Check if ZCAM results in coordinates within sRGB gamut.
-export function inside_rgb (zcam, viewing) {
-  const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
-  const z = -0.0000152587890625, o = +1.0000152587890625;
-  return r > z && r < o && g > z && g < o && b > z && b < o;
+/// Ensure `zcam` contains Jz if missing.
+export function zcam_ensure_Jz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Jz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { ByQzw } = zcam.viewing[_zcam_setup];
+    zcam.Jz = zcam.Qz * ByQzw;
+  }
+  return zcam;
 }
 
-/// Find chroma maximum for hue and brightness.
-export function zcam_hue_maximize_Cz (hz, Qz, eps = 0.1, maxCz = 101, viewing = undefined) {
-  const cz_inside_rgb = Cz => inside_rgb ({ hz, Qz, Cz }, viewing);
+/// Ensure `zcam` contains Qz if missing.
+export function zcam_ensure_Qz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Qz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { ByQzw } = zcam.viewing[_zcam_setup];
+    zcam.Qz = zcam.Jz / ByQzw;
+  }
+  return zcam;
+}
+
+/// Ensure `zcam` contains Sz if missing.
+export function zcam_ensure_Sz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Sz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { SzF } = zcam.viewing[_zcam_setup];
+    const minJz = 1e-17; // Note, avoid NaN for Jz==0
+    zcam.Sz = SzF * Math.sqrt (zcam_ensure_Cz (zcam).Cz / Math.max (zcam_ensure_Jz (zcam).Jz, minJz));
+  }
+  return zcam;
+}
+
+/// Ensure `zcam` contains Cz if missing.
+export function zcam_ensure_Cz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Cz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { ByQzw, ByQzwF } = zcam.viewing[_zcam_setup];
+    if (has (zcam.Mz))
+      zcam.Cz = zcam.Mz * ByQzw;
+    else if (has (zcam.Sz))
+      zcam.Cz = zcam_ensure_Qz (zcam).Qz * zcam.Sz * zcam.Sz * ByQzwF;
+    else if (has (zcam.Vz))
+      Cz = Math.sqrt ((zcam.Vz**2 - (zcam_ensure_Jz (zcam).Jz - 58)**2) * (1/3.4));
+    else if (has (zcam.Wz))
+      Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - zcam_ensure_Jz (zcam).Jz)**2);
+    else if (has (zcam.Kz))
+      Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - zcam_ensure_Jz (zcam).Jz**2) * (1.0 / 2**(3/2));
+    else
+      zcam_missing ("Cz OR Sz OR Mz OR Vz OR Wz OR Kz");
+  }
+  return zcam;
+}
+
+/// Ensure `zcam` contains Mz if missing.
+export function zcam_ensure_Mz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Mz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { ByQzw } = zcam.viewing[_zcam_setup];
+    zcam_ensure_Cz (zcam);
+    zcam.Mz = zcam.Cz / ByQzw;
+  }
+  return zcam;
+}
+
+/// Add Qz, Jz, Cz, Sz to `zcam` if missing.
+export function zcam_extend (zcam, viewing = undefined) {
+  if (viewing || !zcam.viewing?.[_zcam_setup])
+    zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  zcam_ensure_Jz (zcam);
+  zcam_ensure_Qz (zcam);
+  zcam_ensure_Cz (zcam);
+  zcam_ensure_Mz (zcam);
+  zcam_ensure_Sz (zcam);
+  return zcam;
+}
+
+/// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
+export function srgb_from_zcam_8bit (zcam, viewing) {
+  const {r, g, b} = linear_rgb_from_zcam (zcam, viewing);
+  const inside = S.linear_rgb_inside_8bit_gamut ({r, g, b});
+  return { r: S.srgb_companding (r), g: S.srgb_companding (g), b: S.srgb_companding (b), inside };
+}
+
+/// Find chroma maximum for hue and brightness that satisfies `rgb_inside_gamut()`.
+export function zcam_hue_maximize_Cz (hz, Qz, eps = 1e-3, maxCz = 101, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+  const cz_inside_rgb = Cz => S.rgb_inside_gamut (linear_rgb_from_zcam ({ hz, Qz, Cz }, viewing));
   return M.bsearch_max (cz_inside_rgb, 0, maxCz, eps);
 }
 
-/// Find (Cz, Qz) cusp for hue.
+/// Find (Cz, Qz) cusp for hue that satisfies `rgb_inside_gamut()`.
 /// Execution is expensive, depending on `eps`, several hundred ZCAM transforms may be needed.
-export function zcam_hue_find_cusp (hz, eps = 0.1, maxCz = 101, viewing = undefined) {
+export function zcam_hue_find_cusp (hz, eps = 1e-3, maxCz = 101, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
   const { JzDiv, IzExp, Qexp, Qmul } = viewing[_zcam_setup];
   const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
   const hue_maximize_Cz = qz => zcam_hue_maximize_Cz (hz, qz, eps, maxCz, viewing);
   const { x: Qz, y: Cz } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
-  return zcam_extend (hz, Qz, Cz, viewing);
-}
-
-export function zcam_extend (hz, Qz, Cz, viewing = undefined) {
-  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
-  const { JzDiv, IzExp, Qexp, Qmul, ByQzw, SzF } = viewing[_zcam_setup];
-  const Mz = Cz / ByQzw;
-  const Sz = SzF * Math.sqrt (Mz / Math.max (Qz, 1e-17)); // Note, avoid NaN for Qz==0
-  return { hz, Qz, Cz, Jz: Qz * ByQzw, Mz, Sz };
+  return zcam_extend ({ hz, Qz, Cz }, viewing);
 }
