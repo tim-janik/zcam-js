@@ -158,7 +158,7 @@ export function xyz_from_Izazbz ({ Iz, az, bz }) {
 // == tests ==
 async function main () {
   const assert = await import ('assert');
-  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd7 = v => rnd (v, 7);
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd7 = v => rnd (v, 7);
   // Luo, Ming; Safdar, Muhammad; Cui, Guihua; Kim, Youn Jin; osa, figshare admin (2017): JzAzBz.m. Optica Publishing Group. Software. https://doi.org/10.6084/m9.figshare.5016299.v1
   assert.deepEqual (Object.values (xyz_from_Jzazbz (Jzazbz_from_xyz ({ x: 0.1, y: 0.2, z: 0.3 }))).map (rnd7), [0.1,0.2,0.3]);
   assert.deepEqual (Object.values (Jzazbz_from_xyz ({x:1, y:1, z:1})).map (rnd7), [0.0177797, 0.0023111, 0.0018745]);
