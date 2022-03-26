@@ -222,7 +222,7 @@ async function main (args) {
   const plot = args.indexOf ('--plot') >= 0;
   const FS = !plot ? null : await import ('fs');	// use module 'fs' to create gnuplot files
   const rnd = (v, digits = 0) => Math.round (v * 10**digits) / 10**digits;
-  const rnd2 = v => rnd (v, 2), rnd3 = v => rnd (v, 3);
+  const rnd2 = v => rnd (v, 2);
   const g = new Gamut();
   let c = g.contains ({ Jz: 99, Sz: 43, hz: 258 });
   assert.deepEqual (c.inside, false); // not inside
