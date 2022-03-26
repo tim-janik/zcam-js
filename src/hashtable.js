@@ -254,6 +254,5 @@ async function main (args) {
   assert.deepEqual (ft.size, m.size);
   assert.deepEqual (array_from (m), array_from (ft));
 }
-
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

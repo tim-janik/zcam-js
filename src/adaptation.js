@@ -84,5 +84,5 @@ async function main (args) {
   xyz_dest = xyz_chromatic_adaptation_invert (xyz_dest, xyz_ref, xyz_918, D);
   assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values ({ x: 50, y: 70, z: 60 }));
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

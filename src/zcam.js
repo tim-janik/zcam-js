@@ -391,5 +391,5 @@ async function main (args) {
   const cusp_259 = { hz: 259, Qz: 79.4, Cz: 42.6, Jz: 49.1, Mz: 68.8, Sz: 81.0 };
   assert.deepEqual (o_rnd1 (zcam_hue_find_cusp (259, 1e-2)), cusp_259);
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

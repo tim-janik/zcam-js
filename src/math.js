@@ -293,5 +293,5 @@ async function main (args) {
   o = gss_max (x => 7 - (x - 1)**2, -5, +5, 5e-6);
   assert.deepEqual ([o.a, o.b].map (rnd5), [+1, +1]);
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));
