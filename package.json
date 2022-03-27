@@ -14,6 +14,7 @@
   "type": "module",
   "scripts": {
     "eslint": "npx eslint src/*.js",
+    "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i dist.js",
     "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/srgb.js' 'node src/jzazbz.js' 'node src/adaptation.js' 'node src/zcam.js' 'node src/gamut.js' "
   },
   "eslintConfig": {
