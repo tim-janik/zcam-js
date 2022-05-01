@@ -84,7 +84,8 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
 }
 
 /// Calculate ZCAM perceptual color attributes from Izazbz.
-function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
+export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
+  viewing = zcam_setup (viewing || zcam_viewing);
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   const { ByQzw, Qmul, Qexp, FL, Fb, MzF, SzF } = viewing[_zcam_setup];
@@ -164,6 +165,7 @@ function zcam_missing (msg) {
 
 /// Construct Izazbz from ZCAM perceptual color attributes.
 export function Izazbz_from_zcam (zcam, viewing) {
+  viewing = zcam_setup (viewing || zcam_viewing);
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const { JzDiv, IzDiv, IzExp, ByQzw, Wpc, ByQzwF } = viewing[_zcam_setup];
