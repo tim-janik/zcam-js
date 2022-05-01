@@ -231,6 +231,7 @@ async function main (args) {
   assert.deepEqual (c.inside, true); // is inside
   assert.deepEqual (c.b > c.g && c.b > c.r, true); // is blue
   assert.deepEqual (rnd2 (g.zcam ('#ff0000').hz), 42.48); // is red
+  assert.deepEqual (S.srgb_hex (g.contains ({ Jz: 50, Sz: 0, hz: 0 })), '#737373');
   function fdump (filename, contents) {
     FS.writeFileSync (filename, contents);
     console.log (filename, contents.length, "bytes");
