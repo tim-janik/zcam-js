@@ -32,8 +32,12 @@ x_b: rat(0.1500); y_b: rat(0.0600);
  * a) make a well behaved color space profile, and
  * b) closely match the white pont used for the ZCAM paper. See:
  * https://ninedegreesbelow.com/photography/well-behaved-profiles-quest.html#white-point-values
+ * x_w: rat(0.31271); y_w: rat(0.32902);
  */
-x_w: rat(0.31271); y_w: rat(0.32902);
+
+x_w: rat(0.312710122);
+y_w: rat(0.329020);
+/* best approximation for ZCAM whitepoint */
 
 /* http://www.brucelindbloom.com/Eqn_RGB_XYZ_Matrix.html */
 [X_r, Y_r, Z_r]: xyY_to_XYZ(x_r, y_r, 1);
@@ -101,3 +105,8 @@ bfloat(ref_V);
 bfloat(epsilon);
 bfloat(kappa);
 bfloat(1/kappa);
+
+/* ZCAM comparison:
+   float ([95.0429, 100, 108.89]);
+   float ([X_w, Y_w, Z_w] * 100);
+ */
