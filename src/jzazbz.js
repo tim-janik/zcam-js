@@ -110,6 +110,11 @@ export function Izazbz_from_srgb (srgb) {
   r = S.srgb_eotf (r);
   g = S.srgb_eotf (g);
   b = S.srgb_eotf (b);
+  return Izazbz_from_linear_rgb ({r, g, b});
+}
+
+/// Convert from linear RGB to Izazbz color space.
+export function Izazbz_from_linear_rgb ({r, g, b}) {
   // zcam.mac: LRGB_4_JZAZBZ
   const R = 3.58511921774749334e1 * r + 5.091922957421885366e1 * g + 1.040820078800592943e1 * b;
   const G = 2.204457695152168704e1 * r + 5.922847248145243308e1 * g + 1.595169005745199446e1 * b;
