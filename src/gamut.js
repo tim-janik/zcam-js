@@ -31,6 +31,43 @@ export class Gamut {
     const {r, g, b} = Z.linear_rgb_from_zcam (zcam, this.viewing);
     return S.linear_rgb_inside_8bit_gamut ({r, g, b});
   }
+  _optimize_Jz (hz, Cz, maximize, eps) {
+    const viewing = this.viewing;
+    const cusp = this.find_cusp (hz); // hz, Jz, Cz
+    if (Cz >= cusp.Cz)
+      return cusp.Jz;
+    if (Cz < 1e-7)
+      return maximize > 0 ? 100 : 0;
+    const jz_inside = Jz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Cz, Jz }, viewing));
+    const optimize = maximize > 0 ? M.bsearch_max : M.bsearch_min;
+    const minJz = maximize > 0 ? cusp.Jz : 0;
+    const maxJz = maximize > 0 ? 100 : cusp.Jz;
+    return optimize (jz_inside, minJz, maxJz, eps);
+  }
+  /// Find maximum Jz within gamut for `zcam` hue and chroma.
+  maximize_Jz (zcam, eps = 2e-3) {
+    const viewing = this.viewing;
+    if (isNaN (zcam.Cz)) {
+      zcam = Object.assign ({}, zcam);
+      zcam.Qz = undefined;
+      zcam.Jz = 21 / 2; // calculating Cz for Jz==0 would be invalid
+      zcam = Z.zcam_ensure_Cz (zcam, viewing);
+    }
+    const { hz, Cz } = zcam;
+    return this._optimize_Jz (hz, Cz, +1, eps);
+  }
+  /// Find minimum Jz within gamut for `zcam` hue and chroma.
+  minimize_Jz (zcam, eps = 2e-3) {
+    const viewing = this.viewing;
+    if (isNaN (zcam.Cz)) {
+      zcam = Object.assign ({}, zcam);
+      zcam.Qz = undefined;
+      zcam.Jz = 21 / 2; // calculating Cz for Jz==0 would be invalid
+      zcam = Z.zcam_ensure_Cz (zcam, viewing);
+    }
+    const { hz, Cz } = zcam;
+    return this._optimize_Jz (hz, Cz, -1, eps);
+  }
   /// Find maximum Sz within gamut for `zcam` hue and lightness.
   maximize_Sz (zcam, eps = 2e-3) {
     zcam = Object.assign ({}, zcam);
