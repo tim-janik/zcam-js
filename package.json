@@ -12,6 +12,7 @@
   "description": "ZCAM color appearance model in JS with related tools and utilities",
   "repository": "github:tim-janik/zcam-js.git",
   "type": "module",
+  "main": "dist.js",
   "scripts": {
     "eslint": "npx eslint src/*.js",
     "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i dist.js",
