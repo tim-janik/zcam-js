@@ -98,7 +98,7 @@ export function linear_rgb_from_Jzazbz ([Jz, az, bz]) {
   const r = 5.929652233247211478e-2 * R + -5.224597023432028461e-2 * G + 3.261128627931201466e-3 * B;
   const g = -2.223843357025295048e-2 * R + 3.822057767168349576e-2 * G + -5.703932567002518455e-3 * B;
   const b = 6.257456855404509128e-4 * R + -7.021583369018091867e-3 * G + 1.667190191984017222e-2 * B;
-  return [S.srgb_companding (r), S.srgb_companding (g), S.srgb_companding (b)];
+  return { r, g, b };
 }
 
 // == Izazbz color space ==
