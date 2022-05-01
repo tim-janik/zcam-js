@@ -34,6 +34,11 @@ export function Jzazbz_from_srgb (srgb) {
   r = S.srgb_eotf (r);
   g = S.srgb_eotf (g);
   b = S.srgb_eotf (b);
+  return Jzazbz_from_linear_rgb ({ r, g, b });
+}
+
+/// Convert from linear RGB to Jzazbz color space.
+export function Jzazbz_from_linear_rgb ({ r, g, b }) {
   // zcam.mac: LRGB_4_JZAZBZ
   const R = 3.58511921774749334e1 * r + 5.091922957421885366e1 * g + 1.040820078800592943e1 * b;
   const G = 2.204457695152168704e1 * r + 5.922847248145243308e1 * g + 1.595169005745199446e1 * b;
@@ -77,6 +82,12 @@ export function xyz_from_Jzazbz ({ j: Jz, a: az, b: bz }) {
 
 /// Convert from Jzazbz color space to sRGB array.
 export function srgb_from_Jzazbz ([Jz, az, bz]) {
+  const { r, g, b } = linear_rgb_from_Jzazbz ([Jz, az, bz]);
+  return [S.srgb_companding (r), S.srgb_companding (g), S.srgb_companding (b)];
+}
+
+/// Convert from Jzazbz color space to sRGB array.
+export function linear_rgb_from_Jzazbz ([Jz, az, bz]) {
   const Jzd0 = Jz + Jzazbz_d0;
   const Iz = Jzd0 / (0.44 + 0.56 * Jzd0);
   const L_ = Iz +0.13860504327153927  * az +0.058047316156118862 * bz;
