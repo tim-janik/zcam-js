@@ -20,13 +20,15 @@ export const _zcam_setup = Symbol ('zcam_setup');
 
 /// Default ZCAM viewing conditions, with ZCAM D65/2° white point in `[Xw,Yw,Zw]`
 export const zcam_viewing = zcam_setup ({
-  // Safdar21, A colour appearance model based on a high dynamic range uniform colour space; https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
+  // Safdar2021, A colour appearance model based on a high dynamic range uniform colour space; https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   // MacEvoy2005; https://www.handprint.com/HP/WCL/color7.html#CAMformulas
-  // Moroney2000; https://www.semanticscholar.org/paper/Usage-Guidelines-for-CIECAM97s-Moroney/bf210c5b24dd55285f4c4b51cbb1d3174bfa68da
+  // Moroney2000, Usage Guidelines for CIECAM97s; https://www.semanticscholar.org/paper/Usage-Guidelines-for-CIECAM97s-Moroney/bf210c5b24dd55285f4c4b51cbb1d3174bfa68da
+  // Moroney1998, A Comparison of CIELAB and CIECAM97s; https://library.imaging.org/cic/articles/6/1/art00005
+  // Luo1998, The structure of the CIE 1997 Colour Appearance Model (CIECAM97s); https://www.semanticscholar.org/paper/The-structure-of-the-CIE-1997-Colour-Appearance-Luo-Hunt/475a9a314826b2645d03abc6ad55b5ed3dfe758b
   // Green2010, Color Management: Understanding and Using ICC Profiles; https://www.wiley.com/en-us/Color+Management+:+Understanding+and+Using+ICC+Profiles-p-9780470058251
   Fs: ZCAM_DIM,			// Average indicates surround is at >= 20% of illuminant [Moroney2000]
   Yb: 20,			// 20% reflectance, "Grey World" assumption [Moroney2000]
-  La: 100,			// cd/m² = Lw * Yb / 100 (Luminance of the adapting field) [Safdar21]
+  La: 100,			// Luminance of the adapting field in cd/m²: La = Lw * Yb / 100 [Safdar2021], La = 1/5 * Lw [Luo1998]
   Xw: ZCAM_D65.x,
   Yw: ZCAM_D65.y,		// cd/m², Luminance of the adopted white point (Lw = 100)
   Zw: ZCAM_D65.z,
