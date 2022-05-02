@@ -83,21 +83,29 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
   return zcam_from_Izazbz (J.Izazbz_from_xyz (xyz65), viewing);
 }
 
+const Hue_Quadrature_Table = [ null,
+			       { /*1*/ h:  33.44, e: 0.68, H:   0 },   // Red
+			       { /*2*/ h:  89.29, e: 0.64, H: 100 },   // Yellow
+			       { /*3*/ h: 146.30, e: 1.52, H: 200 },   // Green
+			       { /*4*/ h: 238.36, e: 0.77, H: 300 },   // Blue
+			       { /*5*/ h: 393.44, e: 0.68, H: 400 } ]; // Red
+
 /// Calculate ZCAM perceptual color attributes from Izazbz.
 export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   viewing = zcam_setup (viewing || zcam_viewing);
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   const { ByQzw, Qmul, Qexp, FL, Fb, MzF, SzF } = viewing[_zcam_setup];
+  // hue angle
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
-  // step 4: Hue Composition (TODO)
-  // Hue Quadrature Table:
-  // i:   1      2      3      4      5
-  // hi: 33.44  89.29 146.30 238.36 393.44
-  // ei:  0.68   0.64   1.52   0.77   0.68
-  // Hi:  0    100    200    300    400
-  const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
+  // hue composition
+  const T = Hue_Quadrature_Table, h_ = hz < T[1].h ? hz + 360 : hz;
+  const i = h_ < T[3].h ? (h_ >= T[2].h ? 2 : 1) : (h_ >= T[4].h ? 4 : 3);
+  const Ti = Hue_Quadrature_Table[i], Tn = Hue_Quadrature_Table[i + 1];
+  const hdi = (h_ - Ti.h) / Ti.e;
+  const hdn = (Tn.h - h_) / Tn.e;
+  const Hz = Ti.H + (100 * hdi) / (hdi + hdn);
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   // brightness
   const Qz  = Qmul * Iz**Qexp;
@@ -116,7 +124,7 @@ export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   // whiteness
   const Wz = 100 - Math.sqrt ((100 - Jz)**2 + Cz2);
   // result
-  const zcam = { FL, Fb, Iz, az, bz, hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz, viewing };
+  const zcam = { FL, Fb, Iz, az, bz, hz, Hz, Qz, Jz, Mz, Cz, Sz, Vz, Kz, Wz, viewing };
   return zcam;
 }
 
@@ -197,12 +205,20 @@ export function Izazbz_from_zcam (zcam, viewing) {
     Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - Jz**2) * (1.0 / 2**(3/2));
   else
     zcam_missing ("Cz OR Sz OR Mz OR Vz OR Wz OR Kz");
-  // TODO: Hz
+  // Hz OR hz
+  const T = Hue_Quadrature_Table;
   if (has (zcam.hz))
     hz = zcam.hz;
-  else
-    zcam_missing ("hz");
-  const h1 = 33.44, h_ = hz < h1 ? hz + 360 : hz;
+  else if (has (zcam.Hz)) {
+    const H = zcam.Hz > 400 ? zcam.Hz % 400 : zcam.Hz >= 0 ? zcam.Hz : 400 - (-zcam.Hz) % 400;
+    const i = H < T[3].H ? (H >= T[2].H ? 2 : 1) : (H >= T[4].H ? 4 : 3);
+    const Ti = Hue_Quadrature_Table[i], Tn = Hue_Quadrature_Table[i + 1];
+    const Hn = (H - Ti.H) * (Tn.e * Ti.h - Ti.e * Tn.h) - 100 * Tn.e * Ti.h;
+    const Hd = (H - Ti.H) * (Tn.e - Ti.e) - 100 * Tn.e, h_= Hn / Hd;
+    hz = h_ > 360 ? h_ - 360 : h_;
+  } else
+    zcam_missing ("Hz OR hz");
+  const h_ = hz < T[1].h ? hz + 360 : hz;
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   const Cz_ = (Wpc * Cz / ez**0.068)**1.3514;
   // xyz65
@@ -326,7 +342,7 @@ async function main (args) {
   const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d;
   // ZCAM
   const NA = NaN; // not applicable
-  const E = [ NA, NA,  NA,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   NA,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
+  const E = [ NA, NA,  NA,  -7,   -7,   -7,   -3,   -7,   -7,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4,   -4,    0,   -4 ];
   const tests = [
     /*T*/ [ "X", "Y", "Z", "Xw", "Yw", "Zw", "Fs", "La", "Yb", "FL", "Fb", "Iz", "az", "bz", "hz", "Hz", "Qz", "Jz", "Mz", "Cz", "Sz", "Vz", "Kz", "Wz" ],
     /*1*/ [ 185, 206, 163, 256, 264, 202, ZCAM_AVERAGE, 264, 100, 1.0970, 0.6155, 0.3947, -0.0165, -0.0048, 196.3524, 237.6401, 321.3464, 92.2520, 10.5252, 3.0216, 19.1314, 34.7022, 25.2994, 91.6837 ],
@@ -380,10 +396,13 @@ async function main (args) {
     };
     for (const lightness of ['Jz', 'Qz']) { // Qz OR Jz
       for (const chroma of ['Cz', 'Sz', 'Mz', 'Vz', 'Wz', 'Kz']) {
-	const zinput = { hz: zcam.hz, viewing: zcam.viewing };
-	zinput[lightness] = zcam[lightness];
-	zinput[chroma] = zcam[chroma];
-	verify (zinput, xyz_from_zcam (zinput));
+	for (const huekind of ['hz', 'Hz']) {
+	  const zinput = { viewing: zcam.viewing };
+	  zinput[huekind] = zcam[huekind];
+	  zinput[lightness] = zcam[lightness];
+	  zinput[chroma] = zcam[chroma];
+	  verify (zinput, xyz_from_zcam (zinput));
+	}
       }
     }
   }
