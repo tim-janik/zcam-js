@@ -89,6 +89,16 @@ const Hue_Quadrature_Table = [ null,
 			       { /*3*/ h: 146.30, e: 1.52, H: 200 },   // Green
 			       { /*4*/ h: 238.36, e: 0.77, H: 300 },   // Blue
 			       { /*5*/ h: 393.44, e: 0.68, H: 400 } ]; // Red
+function hue_composition (hz) {
+  hz = hz > 360 ? hz % 360 : hz >= 0 ? hz : 360 - (-hz) % 360;
+  const T = Hue_Quadrature_Table, h_ = hz < T[1].h ? hz + 360 : hz;
+  const i = h_ < T[3].h ? (h_ >= T[2].h ? 2 : 1) : (h_ >= T[4].h ? 4 : 3);
+  const Ti = Hue_Quadrature_Table[i], Tn = Hue_Quadrature_Table[i + 1];
+  const hdi = (h_ - Ti.h) / Ti.e;
+  const hdn = (Tn.h - h_) / Tn.e;
+  const Hz = Ti.H + (100 * hdi) / (hdi + hdn);
+  return { Hz, h_ };
+}
 
 /// Calculate ZCAM perceptual color attributes from Izazbz.
 export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
@@ -100,12 +110,7 @@ export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
   // hue composition
-  const T = Hue_Quadrature_Table, h_ = hz < T[1].h ? hz + 360 : hz;
-  const i = h_ < T[3].h ? (h_ >= T[2].h ? 2 : 1) : (h_ >= T[4].h ? 4 : 3);
-  const Ti = Hue_Quadrature_Table[i], Tn = Hue_Quadrature_Table[i + 1];
-  const hdi = (h_ - Ti.h) / Ti.e;
-  const hdn = (Tn.h - h_) / Tn.e;
-  const Hz = Ti.H + (100 * hdi) / (hdi + hdn);
+  const { Hz, h_ } = hue_composition (hz);
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   // brightness
   const Qz  = Qmul * Iz**Qexp;
@@ -295,10 +300,22 @@ export function zcam_ensure_Mz (zcam, viewing = undefined) {
   return zcam;
 }
 
+/// Ensure `zcam` contains Hz if missing.
+export function zcam_ensure_Hz (zcam, viewing = undefined) {
+  if (isNaN (zcam.Hz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    const { Hz } = hue_composition (zcam.hz);
+    zcam.Hz = Hz;
+  }
+  return zcam;
+}
+
 /// Add Qz, Jz, Cz, Sz to `zcam` if missing.
 export function zcam_extend (zcam, viewing = undefined) {
   if (viewing || !zcam.viewing?.[_zcam_setup])
     zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  zcam_ensure_Hz (zcam);
   zcam_ensure_Jz (zcam);
   zcam_ensure_Qz (zcam);
   zcam_ensure_Cz (zcam);
@@ -418,7 +435,7 @@ async function main (args) {
 	r[k] = rnd (o[k], 1);
     return r;
   };
-  const cusp_259 = { hz: 259, Qz: 79.4, Cz: 42.6, Jz: 49.1, Mz: 68.8, Sz: 81.0 };
+  const cusp_259 = { hz: 259, Hz: 311.9, Qz: 79.4, Cz: 42.6, Jz: 49.1, Mz: 68.8, Sz: 81.0 };
   assert.deepEqual (o_rnd1 (zcam_hue_find_cusp (259, 1e-2)), cusp_259);
 }
 if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
