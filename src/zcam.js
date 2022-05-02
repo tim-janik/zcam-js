@@ -14,22 +14,24 @@ export const ZCAM_DARK = 0.525;
 export const ZCAM_DIM = 0.59;
 export const ZCAM_AVERAGE = 0.69;
 
-// ZCAM_D65 uses this XYZ white point; https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
-const zcam_white_point = { x: 95.0429, y: 100, z: 108.89 };
+/// XYZ values of the white point used in the ZCAM paper
+export const ZCAM_D65 = { x: 95.0429, y: 100, z: 108.89 }; // https://github.com/ksmet1977/luxpy/issues/20#issuecomment-943276940
 export const _zcam_setup = Symbol ('zcam_setup');
 
 /// Default ZCAM viewing conditions, with ZCAM D65/2° white point in `[Xw,Yw,Zw]`
 export const zcam_viewing = zcam_setup ({
-  // Safdar21, A colour appearance model based on a high dynamic range uniform colour space; https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
+  // Safdar2021, A colour appearance model based on a high dynamic range uniform colour space; https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   // MacEvoy2005; https://www.handprint.com/HP/WCL/color7.html#CAMformulas
-  // Moroney2000; https://www.semanticscholar.org/paper/Usage-Guidelines-for-CIECAM97s-Moroney/bf210c5b24dd55285f4c4b51cbb1d3174bfa68da
+  // Moroney2000, Usage Guidelines for CIECAM97s; https://www.semanticscholar.org/paper/Usage-Guidelines-for-CIECAM97s-Moroney/bf210c5b24dd55285f4c4b51cbb1d3174bfa68da
+  // Moroney1998, A Comparison of CIELAB and CIECAM97s; https://library.imaging.org/cic/articles/6/1/art00005
+  // Luo1998, The structure of the CIE 1997 Colour Appearance Model (CIECAM97s); https://www.semanticscholar.org/paper/The-structure-of-the-CIE-1997-Colour-Appearance-Luo-Hunt/475a9a314826b2645d03abc6ad55b5ed3dfe758b
   // Green2010, Color Management: Understanding and Using ICC Profiles; https://www.wiley.com/en-us/Color+Management+:+Understanding+and+Using+ICC+Profiles-p-9780470058251
   Fs: ZCAM_DIM,			// Average indicates surround is at >= 20% of illuminant [Moroney2000]
   Yb: 20,			// 20% reflectance, "Grey World" assumption [Moroney2000]
-  La: 100,			// cd/m² = Lw * Yb / 100 (Luminance of the adapting field) [Safdar21]
-  Xw: zcam_white_point.x,
-  Yw: zcam_white_point.y,	// cd/m², Luminance of the adopted white point (Lw = 100)
-  Zw: zcam_white_point.z,
+  La: 100,			// Luminance of the adapting field in cd/m²: La = Lw * Yb / 100 [Safdar2021], La = 1/5 * Lw [Luo1998]
+  Xw: ZCAM_D65.x,
+  Yw: ZCAM_D65.y,		// cd/m², Luminance of the adopted white point (Lw = 100)
+  Zw: ZCAM_D65.z,
 }, {});
 
 /// Precalculate ZCAM `viewing` auxillary values.
@@ -43,7 +45,6 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
   const FL = 0.171 * viewing.La ** (1/3) * (1 - Math.exp (-48/9 * viewing.La));
   const F = viewing.Fs >= ZCAM_AVERAGE ? 1.0 : viewing.Fs >= ZCAM_DIM ? 0.9 : 0.8; // The CIECAM02 color appearance model
   const D = F * (1.0 - 1/3.6 * Math.exp ((viewing.La + 42.0) / -92.0));	// https://en.wikipedia.org/wiki/CIECAM02#CAT02
-  const ZCAM_D65 = zcam_white_point;
   const IzExp = Fb**0.12 / (1.6 * viewing.Fs);
   const IzDiv = 1.0 / (2700 * viewing.Fs**2.2 * Fb**0.5 * FL**0.2);
   const whitepoint2d65 = w => w; // untransformed, the ZCAM paper expects the white point relative to D65
@@ -83,7 +84,8 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
 }
 
 /// Calculate ZCAM perceptual color attributes from Izazbz.
-function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
+export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
+  viewing = zcam_setup (viewing || zcam_viewing);
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
   const { ByQzw, Qmul, Qexp, FL, Fb, MzF, SzF } = viewing[_zcam_setup];
@@ -163,6 +165,7 @@ function zcam_missing (msg) {
 
 /// Construct Izazbz from ZCAM perceptual color attributes.
 export function Izazbz_from_zcam (zcam, viewing) {
+  viewing = zcam_setup (viewing || zcam_viewing);
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
   const { JzDiv, IzDiv, IzExp, ByQzw, Wpc, ByQzwF } = viewing[_zcam_setup];
@@ -296,8 +299,11 @@ export function srgb_from_zcam_8bit (zcam, viewing) {
 }
 
 /// Find chroma maximum for hue and brightness that satisfies `rgb_inside_gamut()`.
-export function zcam_hue_maximize_Cz (hz, Qz, eps = 1e-3, maxCz = 101, viewing = undefined) {
-  viewing = zcam_setup (viewing ? viewing : zcam_viewing);
+export function zcam_maximum_Cz (zcam, eps = 1e-3, maxCz = 101, viewing = undefined) {
+  viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+  if (isNaN (zcam.Qz))
+    zcam = zcam_ensure_Qz (Object.assign ({}, zcam), viewing);
+  const hz = zcam.hz, Qz = zcam.Qz;
   const cz_inside_rgb = Cz => S.rgb_inside_gamut (linear_rgb_from_zcam ({ hz, Qz, Cz }, viewing));
   return M.bsearch_max (cz_inside_rgb, 0, maxCz, eps);
 }
@@ -308,7 +314,7 @@ export function zcam_hue_find_cusp (hz, eps = 1e-3, maxCz = 101, viewing = undef
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
   const { JzDiv, IzExp, Qexp, Qmul } = viewing[_zcam_setup];
   const Jz = 100.0001, Iz = (Jz * JzDiv)**IzExp, maxQz = Qmul * Iz**Qexp;
-  const hue_maximize_Cz = qz => zcam_hue_maximize_Cz (hz, qz, eps, maxCz, viewing);
+  const hue_maximize_Cz = Qz => zcam_maximum_Cz ({ hz, Qz }, eps, maxCz, viewing);
   const { x: Qz, y: Cz } = M.gss_max (hue_maximize_Cz, 0, maxQz, eps);
   return zcam_extend ({ hz, Qz, Cz }, viewing);
 }

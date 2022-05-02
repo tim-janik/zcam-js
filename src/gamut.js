@@ -26,7 +26,7 @@ export class Gamut {
     const inside = S.linear_rgb_inside_8bit_gamut ({r, g, b});
     return { r: S.srgb_companding (r), g: S.srgb_companding (g), b: S.srgb_companding (b), inside };
   }
-  /// Just return if `zcam` transforms into sRGB coordinates within gamut.
+  /// Return Boolean if `zcam` transforms into sRGB coordinates within gamut.
   inside (zcam) {
     const {r, g, b} = Z.linear_rgb_from_zcam (zcam, this.viewing);
     return S.linear_rgb_inside_8bit_gamut ({r, g, b});

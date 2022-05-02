@@ -30,10 +30,15 @@ function Jzazbz_PQinv (v) {
 
 /// Convert from sRGB to Jzazbz color space.
 export function Jzazbz_from_srgb (srgb) {
-  let [r, g, b] = S.srgb_from (srgb);
+  let {r, g, b} = S.srgb_from (srgb);
   r = S.srgb_eotf (r);
   g = S.srgb_eotf (g);
   b = S.srgb_eotf (b);
+  return Jzazbz_from_linear_rgb ({ r, g, b });
+}
+
+/// Convert from linear RGB to Jzazbz color space.
+export function Jzazbz_from_linear_rgb ({ r, g, b }) {
   // zcam.mac: LRGB_4_JZAZBZ
   const R = 3.58511921774749334e1 * r + 5.091922957421885366e1 * g + 1.040820078800592943e1 * b;
   const G = 2.204457695152168704e1 * r + 5.922847248145243308e1 * g + 1.595169005745199446e1 * b;
@@ -43,7 +48,7 @@ export function Jzazbz_from_srgb (srgb) {
   const bz = +0.199076 * L_ +1.096799 * M_ -1.295875 * S_;
   const Iz = 0.5 * (L_ + M_);
   const Jz = (0.44 * Iz) / (1 - 0.56*Iz) - Jzazbz_d0;
-  return [Jz, az, bz];
+  return {Jz, az, bz};
 }
 
 /// Convert from absolute XYZ (D65/2°) to Jzazbz color space.
@@ -58,11 +63,11 @@ export function Jzazbz_from_xyz ({ x: x65, y: y65, z: z65 }) {
   const bz = +0.199076 * L_ +1.096799 * M_ -1.295875 * S_;
   const Iz = 0.5 * (L_ + M_);
   const Jz = (0.44 * Iz) / (1 - 0.56*Iz) - Jzazbz_d0;
-  return { j: Jz, a: az, b: bz };
+  return { Jz, az, bz };
 }
 
 /// Convert from Jzazbz color space to absolute XYZ (D65/2°).
-export function xyz_from_Jzazbz ({ j: Jz, a: az, b: bz }) {
+export function xyz_from_Jzazbz ({ Jz, az, bz }) {
   const Jzd0 = Jz + Jzazbz_d0;
   const Iz = Jzd0 / (0.44 + 0.56 * Jzd0);
   const L_ = Iz +0.13860504327153927  * az +0.058047316156118862 * bz;
@@ -76,7 +81,13 @@ export function xyz_from_Jzazbz ({ j: Jz, a: az, b: bz }) {
 }
 
 /// Convert from Jzazbz color space to sRGB array.
-export function srgb_from_Jzazbz ([Jz, az, bz]) {
+export function srgb_from_Jzazbz ({Jz, az, bz}) {
+  const { r, g, b } = linear_rgb_from_Jzazbz ({ Jz, az, bz });
+  return { r: S.srgb_companding (r), g: S.srgb_companding (g), b: S.srgb_companding (b) };
+}
+
+/// Convert from Jzazbz color space to sRGB array.
+export function linear_rgb_from_Jzazbz ({ Jz, az, bz }) {
   const Jzd0 = Jz + Jzazbz_d0;
   const Iz = Jzd0 / (0.44 + 0.56 * Jzd0);
   const L_ = Iz +0.13860504327153927  * az +0.058047316156118862 * bz;
@@ -87,7 +98,7 @@ export function srgb_from_Jzazbz ([Jz, az, bz]) {
   const r = 5.929652233247211478e-2 * R + -5.224597023432028461e-2 * G + 3.261128627931201466e-3 * B;
   const g = -2.223843357025295048e-2 * R + 3.822057767168349576e-2 * G + -5.703932567002518455e-3 * B;
   const b = 6.257456855404509128e-4 * R + -7.021583369018091867e-3 * G + 1.667190191984017222e-2 * B;
-  return [S.srgb_companding (r), S.srgb_companding (g), S.srgb_companding (b)];
+  return { r, g, b };
 }
 
 // == Izazbz color space ==
@@ -95,10 +106,15 @@ const Izazbz_ϵ = 3.7035226210190005e-11;
 
 /// Convert from sRGB to Izazbz color space.
 export function Izazbz_from_srgb (srgb) {
-  let [r, g, b] = S.srgb_from (srgb);
+  let {r, g, b} = S.srgb_from (srgb);
   r = S.srgb_eotf (r);
   g = S.srgb_eotf (g);
   b = S.srgb_eotf (b);
+  return Izazbz_from_linear_rgb ({r, g, b});
+}
+
+/// Convert from linear RGB to Izazbz color space.
+export function Izazbz_from_linear_rgb ({r, g, b}) {
   // zcam.mac: LRGB_4_JZAZBZ
   const R = 3.58511921774749334e1 * r + 5.091922957421885366e1 * g + 1.040820078800592943e1 * b;
   const G = 2.204457695152168704e1 * r + 5.922847248145243308e1 * g + 1.595169005745199446e1 * b;
@@ -139,7 +155,7 @@ export function linear_rgb_from_Izazbz ({ Iz, az, bz }) {
 /// Convert from Izazbz color space to sRGB array.
 export function srgb_from_Izazbz (Izazbz) {
   const {r, g, b} = linear_rgb_from_Izazbz (Izazbz);
-  return [S.srgb_companding (r), S.srgb_companding (g), S.srgb_companding (b)];
+  return { r: S.srgb_companding (r), g: S.srgb_companding (g), b: S.srgb_companding (b) };
 }
 
 /// Convert from Izazbz color space to absolute XYZ (D65/2°).
@@ -162,7 +178,7 @@ async function main () {
   // Luo, Ming; Safdar, Muhammad; Cui, Guihua; Kim, Youn Jin; osa, figshare admin (2017): JzAzBz.m. Optica Publishing Group. Software. https://doi.org/10.6084/m9.figshare.5016299.v1
   assert.deepEqual (Object.values (xyz_from_Jzazbz (Jzazbz_from_xyz ({ x: 0.1, y: 0.2, z: 0.3 }))).map (rnd7), [0.1,0.2,0.3]);
   assert.deepEqual (Object.values (Jzazbz_from_xyz ({x:1, y:1, z:1})).map (rnd7), [0.0177797, 0.0023111, 0.0018745]);
-  assert.deepEqual (Object.values (xyz_from_Jzazbz ({j:1, a:0.1, b:0.1})).map (rnd7), [11746.8716779, 9137.2585481, 5280.241668]);
+  assert.deepEqual (Object.values (xyz_from_Jzazbz ({Jz:1, az:0.1, bz:0.1})).map (rnd7), [11746.8716779, 9137.2585481, 5280.241668]);
   assert.deepEqual ('#ff00ff', S.srgb_hex (srgb_from_Jzazbz (Jzazbz_from_srgb ('#ff00ff'))));
   assert.deepEqual ('#ffff00', S.srgb_hex (srgb_from_Jzazbz (Jzazbz_from_srgb ('#ffff00'))));
   assert.deepEqual ('#00ffff', S.srgb_hex (srgb_from_Jzazbz (Jzazbz_from_srgb ('#00ffff'))));
