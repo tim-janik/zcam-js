@@ -13,6 +13,16 @@ const Jzazbz_M1 = [ [0.41478972, 0.579999, 0.0146480], [-0.2015100, 1.120649, 0.
 const Jzazbz_R1 = [ [ 1.9242264357876069,   -1.0047923125953657,   0.037651404030618014],
 		    [ 0.35031676209499912,   0.72648119393165533, -0.065384422948085025 ],
 		    [-0.090982810982847592, -0.31272829052307399,  1.5227665613052606 ] ]; // == Jzazbz_M1^-1
+const LRGB_4_JZAZBZ = [
+  [35.85124189030703,50.91921048995807,10.40819692283867],
+  [22.04460751949686,59.22845028293088,15.95168413366637],
+  [7.938763689810172,23.03366628777567,66.30874087788476]
+];
+const JZAZBZ_4_LRGB = [
+  [0.05929644010943315,-0.05224589778787188,0.003261124105913793],
+  [-0.0222384419051046,0.03822059199656136,-0.005703934704807397],
+  [6.257459179161212e-4,-0.007021585976539293,0.01667190811108443]
+];
 
 function Jzazbz_PQ (v) {
   // PQ (0 … 1e304) -> 3.703522621019e-11 … 3.22711272562802
@@ -40,9 +50,7 @@ export function Jzazbz_from_srgb (srgb) {
 /// Convert from linear RGB to Jzazbz color space.
 export function Jzazbz_from_linear_rgb ({ r, g, b }) {
   // zcam.mac: LRGB_4_JZAZBZ
-  const R = 3.58511921774749334e1 * r + 5.091922957421885366e1 * g + 1.040820078800592943e1 * b;
-  const G = 2.204457695152168704e1 * r + 5.922847248145243308e1 * g + 1.595169005745199446e1 * b;
-  const B = 7.938752681588265631e0 * r + 2.303367492067649837e1 * g + 6.630876550216657741e1 * b;
+  const [R, G, B] = M.matrix33_mul3 (LRGB_4_JZAZBZ, [r, g, b]);
   const L_ = Jzazbz_PQ (R), M_ = Jzazbz_PQ (G), S_ = Jzazbz_PQ (B);
   const az = +3.524000 * L_ -4.066708 * M_ +0.542708 * S_;
   const bz = +0.199076 * L_ +1.096799 * M_ -1.295875 * S_;
@@ -95,9 +103,7 @@ export function linear_rgb_from_Jzazbz ({ Jz, az, bz }) {
   const S_ = Iz -0.096019242026318938 * az -0.81189189605603884  * bz;
   const R = Jzazbz_PQinv (L_), G = Jzazbz_PQinv (M_), B = Jzazbz_PQinv (S_);
   // zcam.mac: JZAZBZ_4_LRGB
-  const r = 5.929652233247211478e-2 * R + -5.224597023432028461e-2 * G + 3.261128627931201466e-3 * B;
-  const g = -2.223843357025295048e-2 * R + 3.822057767168349576e-2 * G + -5.703932567002518455e-3 * B;
-  const b = 6.257456855404509128e-4 * R + -7.021583369018091867e-3 * G + 1.667190191984017222e-2 * B;
+  const [r, g, b] = M.matrix33_mul3 (JZAZBZ_4_LRGB, [R, G, B]);
   return { r, g, b };
 }
 
@@ -116,9 +122,7 @@ export function Izazbz_from_srgb (srgb) {
 /// Convert from linear RGB to Izazbz color space.
 export function Izazbz_from_linear_rgb ({r, g, b}) {
   // zcam.mac: LRGB_4_JZAZBZ
-  const R = 3.58511921774749334e1 * r + 5.091922957421885366e1 * g + 1.040820078800592943e1 * b;
-  const G = 2.204457695152168704e1 * r + 5.922847248145243308e1 * g + 1.595169005745199446e1 * b;
-  const B = 7.938752681588265631e0 * r + 2.303367492067649837e1 * g + 6.630876550216657741e1 * b;
+  const [R, G, B] = M.matrix33_mul3 (LRGB_4_JZAZBZ, [r, g, b]);
   const R_ = Jzazbz_PQ (R), G_ = Jzazbz_PQ (G), B_ = Jzazbz_PQ (B);
   const az = +3.524000 * R_ -4.066708 * G_ +0.542708 * B_;
   const bz = +0.199076 * R_ +1.096799 * G_ -1.295875 * B_;
@@ -146,9 +150,7 @@ export function linear_rgb_from_Izazbz ({ Iz, az, bz }) {
   const B_ = I +0.042585801245220344 * az -0.75384457989992004 * bz;
   const [R, G, B] = [Jzazbz_PQinv (R_), Jzazbz_PQinv (G_), Jzazbz_PQinv (B_)];
   // zcam.mac: JZAZBZ_4_LRGB
-  const r = 5.929652233247211478e-2 * R + -5.224597023432028461e-2 * G + 3.261128627931201466e-3 * B;
-  const g = -2.223843357025295048e-2 * R + 3.822057767168349576e-2 * G + -5.703932567002518455e-3 * B;
-  const b = 6.257456855404509128e-4 * R + -7.021583369018091867e-3 * G + 1.667190191984017222e-2 * B;
+  const [r, g, b] = M.matrix33_mul3 (JZAZBZ_4_LRGB, [R, G, B]);
   return {r, g, b};
 }
 
