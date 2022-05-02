@@ -1,6 +1,6 @@
 {
   "name": "zcam-js",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "license": "MPL-2.0",
   "author": "Tim Janik",
   "bugs": "https://github.com/tim-janik/zcam-js/issues",
@@ -18,13 +18,13 @@
     "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i dist.js",
     "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/srgb.js' 'node src/jzazbz.js' 'node src/adaptation.js' 'node src/zcam.js' 'node src/gamut.js' "
   },
- "files": [
-   "LICENSE",
-   "dist.js",
-   "dist.cjs",
-   "NEWS.md",
-   "README.md"
- ],
+  "files": [
+    "LICENSE",
+    "dist.js",
+    "dist.cjs",
+    "NEWS.md",
+    "README.md"
+  ],
   "devDependencies": {
     "@rollup/plugin-replace": "^4.0.0",
     "concurrently": "^7.0.0",
