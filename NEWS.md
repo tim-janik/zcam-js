@@ -1,3 +1,14 @@
+## 0.0.7    # 2022-03-06 Tim Janik
+
+* Bundle dist.js as ESM module and provide dist.cjs.
+* Added automatic unit testing and moved tests into their units.
+* Added linting and cleaned up various parts of the code.
+* Fixed some bsearch and spline implementation bugs.
+* Added float-array hashtable to cache lengthy calculations.
+* Added gamut helper for chroma clamping and calculation caching.
+* Added API to explicitely calculate Mz Cz Sz Qz Jz fields.
+* BREAKING CHANGE: Colors are in {r, g, b} objects now instead of Arrays.
+
 ## 0.0.6    # 2022-03-06 Tim Janik
 
 * Fixed ZCAM tests not catching NaN values

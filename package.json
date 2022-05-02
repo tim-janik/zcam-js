@@ -18,25 +18,13 @@
     "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i dist.js",
     "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/srgb.js' 'node src/jzazbz.js' 'node src/adaptation.js' 'node src/zcam.js' 'node src/gamut.js' "
   },
-  "eslintConfig": {
-    "parserOptions": {
-      "sourceType": "module"
-    },
-    "env": {
-      "es2022": true,
-      "browser": true,
-      "node": true
-    },
-    "extends": [
-      "eslint:recommended"
-    ],
-    "rules": {
-      "no-loss-of-precision": "off",
-      "no-mixed-spaces-and-tabs": "off",
-      "no-unused-vars": "warn",
-      "no-constant-condition": "off"
-    }
-  },
+ "files": [
+   "LICENSE",
+   "dist.js",
+   "dist.cjs",
+   "NEWS.md",
+   "README.md"
+ ],
   "devDependencies": {
     "@rollup/plugin-replace": "^4.0.0",
     "concurrently": "^7.0.0",
