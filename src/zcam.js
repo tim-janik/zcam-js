@@ -350,8 +350,10 @@ export function srgb_from_zcam_8bit (zcam, viewing) {
 /// Find chroma maximum for hue and brightness that satisfies `rgb_inside_gamut()`.
 export function zcam_maximum_Cz (zcam, eps = 1e-3, maxCz = 101, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-  if (isNaN (zcam.Qz))
+  if (isNaN (zcam.Qz) || isNaN (zcam.hz)) {
     zcam = zcam_ensure_Qz (Object.assign ({}, zcam), viewing);
+    zcam = zcam_ensure_hz (zcam);
+  }
   const hz = zcam.hz, Qz = zcam.Qz;
   const cz_inside_rgb = Cz => S.rgb_inside_gamut (linear_rgb_from_zcam ({ hz, Qz, Cz }, viewing));
   return M.bsearch_max (cz_inside_rgb, 0, maxCz, eps);
