@@ -87,7 +87,7 @@ export class Gamut {
     for (const [i, spot] of spots.entries()) {
       const gss_minmax = i % 2 ? M.gss_max : M.gss_min;
       // accuracy is important for spline segmentation
-      const {x, y} = gss_minmax (h => hue_find_cusp (h).Jz, spot - 22, spot + 22, 1e-7);
+      const {x, _y} = gss_minmax (h => hue_find_cusp (h).Jz, spot - 22, spot + 22, 1e-7);
       this.extrema.push (x);
       await 0; // distribute slow work
     }
