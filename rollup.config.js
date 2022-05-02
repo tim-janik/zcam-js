@@ -9,13 +9,17 @@ const plugins = [
   }),
 ];
 
-export default {
-  input: 'index.js',
-  treeshake: "safest",
-  output: {
-    file: 'dist.js',
-    format: 'es'
+const input = 'index.js';
+const treeshake = 'safest';
+const external = ['fs', 'assert', 'perf_hooks'];
+
+export default [
+  {
+    input, treeshake, external, plugins,
+    output: {file: 'dist.js', format: 'es' },
   },
-  external: ['fs', 'assert', 'perf_hooks'],
-  plugins
-};
+  {
+    input, treeshake, external, plugins,
+    output: {file: 'dist.cjs', format: 'cjs' },
+  },
+];
