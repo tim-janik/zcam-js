@@ -156,7 +156,7 @@ export class Float64Table {
     for (const entry of this)
       callback.call (thisArg, entry[1], entry[0], this);
   }
-};
+}
 
 async function main (args) {
   const assert = await import ('assert');
@@ -200,7 +200,7 @@ async function main (args) {
     return arr.sort ((p,n) => p[0] - n[0]);
   }
   // test behaviour
-  const N = 9999;;
+  const N = 9999;
   const ft = new Float64Table();
   const f1 = i => 2 + i * 0.17;
   for (let i = 0; i < N; i++)
@@ -254,6 +254,5 @@ async function main (args) {
   assert.deepEqual (ft.size, m.size);
   assert.deepEqual (array_from (m), array_from (ft));
 }
-
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

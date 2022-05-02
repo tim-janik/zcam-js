@@ -87,7 +87,7 @@ export class Gamut {
     for (const [i, spot] of spots.entries()) {
       const gss_minmax = i % 2 ? M.gss_max : M.gss_min;
       // accuracy is important for spline segmentation
-      const {x, y} = gss_minmax (h => hue_find_cusp (h).Jz, spot - 22, spot + 22, 1e-7);
+      const {x, _y} = gss_minmax (h => hue_find_cusp (h).Jz, spot - 22, spot + 22, 1e-7);
       this.extrema.push (x);
       await 0; // distribute slow work
     }
@@ -222,7 +222,7 @@ async function main (args) {
   const plot = args.indexOf ('--plot') >= 0;
   const FS = !plot ? null : await import ('fs');	// use module 'fs' to create gnuplot files
   const rnd = (v, digits = 0) => Math.round (v * 10**digits) / 10**digits;
-  const rnd2 = v => rnd (v, 2), rnd3 = v => rnd (v, 3);
+  const rnd2 = v => rnd (v, 2);
   const g = new Gamut();
   let c = g.contains ({ Jz: 99, Sz: 43, hz: 258 });
   assert.deepEqual (c.inside, false); // not inside
@@ -243,5 +243,5 @@ async function main (args) {
   if (FS)
     console.log (`plot "xg-jzf" with lines, "xg-jzs" with lines, "xg-jzp", "xg-czf" with lines, "xg-czs" with lines, "xg-czp", ${g.minCz}, ${g.maxCz}`);
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

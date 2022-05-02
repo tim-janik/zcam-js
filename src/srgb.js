@@ -130,5 +130,5 @@ async function main (args) {
   assert.deepEqual (srgb_from_linear (srgb_to_linear ([1, 1, 1])).map (v => rnd (v, 7)), [1, 1, 1]);
   assert.deepEqual (srgb_from_linear ({ r: 0.051, g: 0.214, b: 0.523 }).map (rnd3), [0.25, 0.5, 0.75]);
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

@@ -72,7 +72,7 @@ export const LPLV_CAT = {
 // == tests ==
 async function main (args) {
   const assert = await import ('assert');
-  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd7 = v => rnd (v, 7);
+  const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd7 = v => rnd (v, 7);
   const xyz_ref = { x: 95.0429, y: 100, z: 108.89 };
   const xyz_100 = { x: 100, y: 100, z: 100 };
   let xyz_dest = xyz_chromatic_adaptation (xyz_100, xyz_100, xyz_ref);
@@ -84,5 +84,5 @@ async function main (args) {
   xyz_dest = xyz_chromatic_adaptation_invert (xyz_dest, xyz_ref, xyz_918, D);
   assert.deepEqual (Object.values (xyz_dest).map (rnd7), Object.values ({ x: 50, y: 70, z: 60 }));
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));

@@ -12,8 +12,10 @@
   "description": "ZCAM color appearance model in JS with related tools and utilities",
   "repository": "github:tim-janik/zcam-js.git",
   "type": "module",
+  "main": "dist.js",
   "scripts": {
-    "eslint": "npx eslint src/*.js",
+    "eslint": "eslint -f unix src/*.js",
+    "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i dist.js",
     "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/srgb.js' 'node src/jzazbz.js' 'node src/adaptation.js' 'node src/zcam.js' 'node src/gamut.js' "
   },
   "eslintConfig": {
@@ -36,7 +38,9 @@
     }
   },
   "devDependencies": {
+    "@rollup/plugin-replace": "^4.0.0",
     "concurrently": "^7.0.0",
-    "eslint": "^8.10.0"
+    "eslint": "^8.14.0",
+    "rollup": "^2.70.1"
   }
 }

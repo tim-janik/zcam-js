@@ -66,7 +66,7 @@ export function zcam_setup (viewing, fallback_viewing = zcam_viewing) {
 /// Calculate ZCAM perceptual color attributes from sRGB.
 export function zcam_from_srgb (srgb, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam_viewing);
-  const { D, ZCAM_D65 } = viewing[_zcam_setup];
+  const { ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     return zcam_from_xyz (E.xyz_from_srgb (srgb), viewing);
   return zcam_from_Izazbz (J.Izazbz_from_srgb (srgb), viewing);
@@ -86,7 +86,7 @@ export function zcam_from_xyz (xyz, viewing = undefined) {
 function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   // ZCAM, a colour appearance model based on a high dynamic range uniform colour space
   // https://opg.optica.org/oe/fulltext.cfm?uri=oe-29-4-6036&id=447640
-  const { IzExp, ByQzw, Qmul, Qexp, Izw, FL, Fb, MzF, SzF } = viewing[_zcam_setup];
+  const { ByQzw, Qmul, Qexp, FL, Fb, MzF, SzF } = viewing[_zcam_setup];
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
   // step 4: Hue Composition (TODO)
@@ -121,7 +121,7 @@ function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
 /// Construct sRGB array from ZCAM perceptual color attributes.
 export function srgb_from_zcam (zcam, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-  const { D, ZCAM_D65 } = viewing[_zcam_setup];
+  const { ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y)
     return E.srgb_from_xyz (xyz_from_zcam (zcam, viewing));
   return J.srgb_from_Izazbz (Izazbz_from_zcam (zcam, viewing));
@@ -130,7 +130,7 @@ export function srgb_from_zcam (zcam, viewing = undefined) {
 /// Construct linear RGB object from ZCAM perceptual color attributes.
 export function linear_rgb_from_zcam (zcam, viewing = undefined) {
   viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-  const { D, ZCAM_D65 } = viewing[_zcam_setup];
+  const { ZCAM_D65 } = viewing[_zcam_setup];
   if (viewing.Xw != ZCAM_D65.x || viewing.Zw != ZCAM_D65.z || viewing.Yw != ZCAM_D65.y) {
     const [r, g, b] = E.linear_rgb_from_xyz (xyz_from_zcam (zcam, viewing));
     return {r, g, b};
@@ -155,12 +155,17 @@ function has (v) {
   return !isNaN (v);
 }
 
+function zcam_missing (msg) {
+  const m = "xyz_from_zcam(): missing: " + msg;
+  console.trace (m);
+  throw m;
+}
+
 /// Construct Izazbz from ZCAM perceptual color attributes.
 export function Izazbz_from_zcam (zcam, viewing) {
   // Supplementary document for ZCAM, a psychophysical model for colour appearance prediction
   // https://opticapublishing.figshare.com/articles/journal_contribution/Supplementary_document_for_ZCAM_a_psychophysical_model_for_colour_appearance_prediction_-_5022171_pdf/13640927
-  const zcam_missing = s => { const m = "xyz_from_zcam(): missing: " + s; console.trace (m); throw m; };
-  const { JzDiv, IzDiv, IzExp, ByQzw, Qmul, Qexp, Wpc, ByQzwF, D, strict, ZCAM_D65 } = viewing[_zcam_setup];
+  const { JzDiv, IzDiv, IzExp, ByQzw, Wpc, ByQzwF } = viewing[_zcam_setup];
   let Iz, Jz, hz, Qz;
   // brightness OR lightness
   if (has (zcam.Qz)) {
@@ -248,11 +253,11 @@ export function zcam_ensure_Cz (zcam, viewing = undefined) {
     else if (has (zcam.Sz))
       zcam.Cz = zcam_ensure_Qz (zcam).Qz * zcam.Sz * zcam.Sz * ByQzwF;
     else if (has (zcam.Vz))
-      Cz = Math.sqrt ((zcam.Vz**2 - (zcam_ensure_Jz (zcam).Jz - 58)**2) * (1/3.4));
+      zcam.Cz = Math.sqrt ((zcam.Vz**2 - (zcam_ensure_Jz (zcam).Jz - 58)**2) * (1/3.4));
     else if (has (zcam.Wz))
-      Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - zcam_ensure_Jz (zcam).Jz)**2);
+      zcam.Cz = Math.sqrt ((100 - zcam.Wz)**2 - (100 - zcam_ensure_Jz (zcam).Jz)**2);
     else if (has (zcam.Kz))
-      Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - zcam_ensure_Jz (zcam).Jz**2) * (1.0 / 2**(3/2));
+      zcam.Cz = Math.sqrt (1.5625 * (100 - zcam.Kz)**2 - zcam_ensure_Jz (zcam).Jz**2) * (1.0 / 2**(3/2));
     else
       zcam_missing ("Cz OR Sz OR Mz OR Vz OR Wz OR Kz");
   }
@@ -391,5 +396,5 @@ async function main (args) {
   const cusp_259 = { hz: 259, Qz: 79.4, Cz: 42.6, Jz: 49.1, Mz: 68.8, Sz: 81.0 };
   assert.deepEqual (o_rnd1 (zcam_hue_find_cusp (259, 1e-2)), cusp_259);
 }
-if (process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
+if (!process.ROLLUP && process.argv[1] == import.meta.url.replace (/^file:\/\//, ''))
   process.exit (await main (process.argv.splice (2)));
