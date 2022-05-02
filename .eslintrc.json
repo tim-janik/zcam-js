@@ -1,0 +1,19 @@
+{
+  "root": true,
+  "env": {
+    "es2022": true,
+    "browser": true,
+    "node": true },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-unused-vars": [ "warn", { "args": "none", "varsIgnorePattern": "^_.*" } ],
+    "no-mixed-spaces-and-tabs": "off",
+    "no-loss-of-precision": "off",
+    "no-constant-condition": "off"
+  }
+}
