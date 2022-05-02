@@ -99,6 +99,16 @@ function hue_composition (hz) {
   const Hz = Ti.H + (100 * hdi) / (hdi + hdn);
   return { Hz, h_ };
 }
+function hue_angle (Hz) {
+  const T = Hue_Quadrature_Table;
+  const H = Hz > 400 ? Hz % 400 : Hz >= 0 ? Hz : 400 - (-Hz) % 400;
+  const i = H < T[3].H ? (H >= T[2].H ? 2 : 1) : (H >= T[4].H ? 4 : 3);
+  const Ti = Hue_Quadrature_Table[i], Tn = Hue_Quadrature_Table[i + 1];
+  const Hn = (H - Ti.H) * (Tn.e * Ti.h - Ti.e * Tn.h) - 100 * Tn.e * Ti.h;
+  const Hd = (H - Ti.H) * (Tn.e - Ti.e) - 100 * Tn.e, h_= Hn / Hd;
+  const hz = h_ > 360 ? h_ - 360 : h_;
+  return hz;
+}
 
 /// Calculate ZCAM perceptual color attributes from Izazbz.
 export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
@@ -214,14 +224,9 @@ export function Izazbz_from_zcam (zcam, viewing) {
   const T = Hue_Quadrature_Table;
   if (has (zcam.hz))
     hz = zcam.hz;
-  else if (has (zcam.Hz)) {
-    const H = zcam.Hz > 400 ? zcam.Hz % 400 : zcam.Hz >= 0 ? zcam.Hz : 400 - (-zcam.Hz) % 400;
-    const i = H < T[3].H ? (H >= T[2].H ? 2 : 1) : (H >= T[4].H ? 4 : 3);
-    const Ti = Hue_Quadrature_Table[i], Tn = Hue_Quadrature_Table[i + 1];
-    const Hn = (H - Ti.H) * (Tn.e * Ti.h - Ti.e * Tn.h) - 100 * Tn.e * Ti.h;
-    const Hd = (H - Ti.H) * (Tn.e - Ti.e) - 100 * Tn.e, h_= Hn / Hd;
-    hz = h_ > 360 ? h_ - 360 : h_;
-  } else
+  else if (has (zcam.Hz))
+    hz = hue_angle (zcam.Hz);
+  else
     zcam_missing ("Hz OR hz");
   const h_ = hz < T[1].h ? hz + 360 : hz;
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
@@ -300,7 +305,7 @@ export function zcam_ensure_Mz (zcam, viewing = undefined) {
   return zcam;
 }
 
-/// Ensure `zcam` contains Hz if missing.
+/// Ensure `zcam` contains hue composition Hz if missing.
 export function zcam_ensure_Hz (zcam, viewing = undefined) {
   if (isNaN (zcam.Hz)) {
     if (viewing || !zcam.viewing?.[_zcam_setup])
@@ -311,11 +316,22 @@ export function zcam_ensure_Hz (zcam, viewing = undefined) {
   return zcam;
 }
 
+/// Ensure `zcam` contains hue angle hz if missing.
+export function zcam_ensure_hz (zcam, viewing = undefined) {
+  if (isNaN (zcam.hz)) {
+    if (viewing || !zcam.viewing?.[_zcam_setup])
+      zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
+    zcam.hz = hue_angle (zcam.Hz);
+  }
+  return zcam;
+}
+
 /// Add Qz, Jz, Cz, Sz to `zcam` if missing.
 export function zcam_extend (zcam, viewing = undefined) {
   if (viewing || !zcam.viewing?.[_zcam_setup])
     zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
   zcam_ensure_Hz (zcam);
+  zcam_ensure_hz (zcam);
   zcam_ensure_Jz (zcam);
   zcam_ensure_Qz (zcam);
   zcam_ensure_Cz (zcam);
