@@ -1,0 +1,20 @@
+# This Source Code Form is licensed MPL-2.0: http://mozilla.org/MPL/2.0
+
+on: [push]
+jobs:
+  Testing:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 17.4
+    - run: npm install
+    - run: npm test
+    - name: Ping IRC
+      if: always()
+      run: |
+        S="${{ job.status }}" && URL="${{ github.event.head_commit.url }}"
+        N="$(git log -1 --format="%cL")" && B="$(git branch --show-current)"
+        MSG=$(git log -1 --format="%s")
+        .github/workflows/ircbot.py -q -j "#Anklang" -n AnklangGH -U "$N" -D "$B" -S "$S" "$MSG" "$URL"
