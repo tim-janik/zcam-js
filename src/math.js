@@ -53,6 +53,17 @@ export function bsearch_max (predicate, vmin, vmax, eps = 1e-5) {
   return vmin; // vmax and v have *not* passed predicate() test
 }
 
+/// Find smallest position (within `eps`) in `[vmin…vmax]` for which `predicate()` is true.
+export function bsearch_min (predicate, vmin, vmax, eps = 1e-5) {
+  for (let v = (vmax + vmin) * 0.5; Math.abs (vmax - vmin) >= eps; v = (vmax + vmin) * 0.5) {
+    if (predicate (v))
+      vmax = v;
+    else
+      vmin = v;
+  }
+  return vmax; // vmin and v have *not* passed predicate() test
+}
+
 // Golden-Section Search
 const gss_upper = 0.61803398874989484820458683436563811772030917980575; // = 1 / phi = 0.5 * (5**0.5 - 1)
 const gss_lower = 0.38196601125010515179541316563436188227969082019424; // = 1 / phi^2 = 0.5 * (3 - 5**0.5)
@@ -287,7 +298,8 @@ export function spline_fit (xs, ys, epsilon = 1e-5, max_points = 1e7, fixed = []
 async function main (args) {
   const assert = await import ('assert');
   const rnd = (v, d = 0) => Math.round (v * 10**d) / 10**d, rnd3 = v => rnd (v, 3), rnd5 = v => rnd (v, 5);
-  assert.deepEqual (rnd3 (bsearch_max (x => x <= 1, -5, +5)), 1.0);
+  assert.deepEqual (rnd3 (bsearch_min (x => Math.abs (x) < 1, -5, +1)), -1.0);
+  assert.deepEqual (rnd3 (bsearch_max (x => Math.abs (x) < 1, -1, +5)), +1.0);
   let o = gss_min (x => (x + 1)**2 + 2, -5, +5, 5e-6);
   assert.deepEqual ([o.a, o.b].map (rnd5), [-1, -1]);
   o = gss_max (x => 7 - (x - 1)**2, -5, +5, 5e-6);
