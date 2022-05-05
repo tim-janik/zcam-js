@@ -1,4 +1,11 @@
-## 0.0.7    # 2022-03-06 Tim Janik
+## 0.0.8    # 2022-05-05 Tim Janik
+
+* Added support to for "Hue Composition" as ZCAM.Hz, range 0…400.
+* Export the ZCAM white point as ZCAM_D65.
+* Added support to convert ZCAM to/from linear RGB values.
+* Adjusted fractional digits of XYZ transformation to better match ZCAM_D65.
+
+## 0.0.7    # 2022-05-02 Tim Janik
 
 * Bundle dist.js as ESM module and provide dist.cjs.
 * Added automatic unit testing and moved tests into their units.
