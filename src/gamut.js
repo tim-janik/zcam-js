@@ -278,6 +278,13 @@ async function main (args) {
   });
   assert.deepEqual (rnd2 (g.clamp_chroma ({ hz: 258, Cz: 42, Jz: 79.5 }).Cz), 20.07);
 
+  const tCusp = g.find_cusp (317.8940326089312);
+  const tjz = { hz: tCusp.hz, Cz: 0.99 * tCusp.Cz, Jz: 0 };
+  tjz.Jz = g.minimize_Jz (tjz);
+  assert.ok (tjz.Jz > 60 && tjz.Jz < 80, "invalid optimize_Jz: " + tjz);
+  tjz.Jz = g.maximize_Jz (tjz);
+  assert.ok (tjz.Jz > 60 && tjz.Jz < 80, "invalid optimize_Jz: " + tjz);
+
   if (FS)
     console.log (`plot "xg-jzf" with lines, "xg-jzs" with lines, "xg-jzp", "xg-czf" with lines, "xg-czs" with lines, "xg-czp", ${g.minCz}, ${g.maxCz}`);
 }
