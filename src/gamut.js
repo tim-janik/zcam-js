@@ -31,6 +31,43 @@ export class Gamut {
     const {r, g, b} = Z.linear_rgb_from_zcam (zcam, this.viewing);
     return S.linear_rgb_inside_8bit_gamut ({r, g, b});
   }
+  _optimize_Jz (hz, Cz, maximize, eps) {
+    const viewing = this.viewing;
+    const cusp = this.find_cusp (hz); // hz, Jz, Cz
+    if (Cz >= cusp.Cz)
+      return cusp.Jz;
+    if (Cz < 1e-7)
+      return maximize > 0 ? 100 : 0;
+    const jz_inside = Jz => S.rgb_inside_gamut (Z.linear_rgb_from_zcam ({ hz, Cz, Jz }, viewing));
+    const optimize = maximize > 0 ? M.bsearch_max : M.bsearch_min;
+    const minJz = maximize > 0 ? cusp.Jz : 0;
+    const maxJz = maximize > 0 ? 100 : cusp.Jz;
+    return optimize (jz_inside, minJz, maxJz, eps);
+  }
+  /// Find maximum Jz within gamut for `zcam` hue and chroma.
+  maximize_Jz (zcam, eps = 2e-3) {
+    const viewing = this.viewing;
+    if (isNaN (zcam.Cz)) {
+      zcam = Object.assign ({}, zcam);
+      zcam.Qz = undefined;
+      zcam.Jz = 21 / 2; // calculating Cz for Jz==0 would be invalid
+      zcam = Z.zcam_ensure_Cz (zcam, viewing);
+    }
+    const { hz, Cz } = zcam;
+    return this._optimize_Jz (hz, Cz, +1, eps);
+  }
+  /// Find minimum Jz within gamut for `zcam` hue and chroma.
+  minimize_Jz (zcam, eps = 2e-3) {
+    const viewing = this.viewing;
+    if (isNaN (zcam.Cz)) {
+      zcam = Object.assign ({}, zcam);
+      zcam.Qz = undefined;
+      zcam.Jz = 21 / 2; // calculating Cz for Jz==0 would be invalid
+      zcam = Z.zcam_ensure_Cz (zcam, viewing);
+    }
+    const { hz, Cz } = zcam;
+    return this._optimize_Jz (hz, Cz, -1, eps);
+  }
   /// Find maximum Sz within gamut for `zcam` hue and lightness.
   maximize_Sz (zcam, eps = 2e-3) {
     zcam = Object.assign ({}, zcam);
@@ -231,6 +268,7 @@ async function main (args) {
   assert.deepEqual (c.inside, true); // is inside
   assert.deepEqual (c.b > c.g && c.b > c.r, true); // is blue
   assert.deepEqual (rnd2 (g.zcam ('#ff0000').hz), 42.48); // is red
+  assert.deepEqual (S.srgb_hex (g.contains ({ Jz: 50, Sz: 0, hz: 0 })), '#737373');
   function fdump (filename, contents) {
     FS.writeFileSync (filename, contents);
     console.log (filename, contents.length, "bytes");
@@ -239,6 +277,13 @@ async function main (args) {
     fdump: FS ? fdump : null,
   });
   assert.deepEqual (rnd2 (g.clamp_chroma ({ hz: 258, Cz: 42, Jz: 79.5 }).Cz), 20.07);
+
+  const tCusp = g.find_cusp (317.8940326089312);
+  const tjz = { hz: tCusp.hz, Cz: 0.99 * tCusp.Cz, Jz: 0 };
+  tjz.Jz = g.minimize_Jz (tjz);
+  assert.ok (tjz.Jz > 60 && tjz.Jz < 80, "invalid optimize_Jz: " + tjz);
+  tjz.Jz = g.maximize_Jz (tjz);
+  assert.ok (tjz.Jz > 60 && tjz.Jz < 80, "invalid optimize_Jz: " + tjz);
 
   if (FS)
     console.log (`plot "xg-jzf" with lines, "xg-jzs" with lines, "xg-jzp", "xg-czf" with lines, "xg-czs" with lines, "xg-czp", ${g.minCz}, ${g.maxCz}`);
