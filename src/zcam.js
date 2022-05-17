@@ -89,7 +89,9 @@ const Hue_Quadrature_Table = [ null,
 			       { /*3*/ h: 146.30, e: 1.52, H: 200 },   // Green
 			       { /*4*/ h: 238.36, e: 0.77, H: 300 },   // Blue
 			       { /*5*/ h: 393.44, e: 0.68, H: 400 } ]; // Red
-function hue_composition (hz) {
+
+/// Calculate hue composition `Hz` from hue angle `hz`.
+export function zcam_hue_composition (hz) {
   hz = hz > 360 ? hz % 360 : hz >= 0 ? hz : 360 - (-hz) % 360;
   const T = Hue_Quadrature_Table, h_ = hz < T[1].h ? hz + 360 : hz;
   const i = h_ < T[3].h ? (h_ >= T[2].h ? 2 : 1) : (h_ >= T[4].h ? 4 : 3);
@@ -99,7 +101,9 @@ function hue_composition (hz) {
   const Hz = Ti.H + (100 * hdi) / (hdi + hdn);
   return { Hz, h_ };
 }
-function hue_angle (Hz) {
+
+/// Calculate hue angle `hz` from hue composition `Hz`.
+export function zcam_hue_angle (Hz) {
   const T = Hue_Quadrature_Table;
   const H = Hz > 400 ? Hz % 400 : Hz >= 0 ? Hz : 400 - (-Hz) % 400;
   const i = H < T[3].H ? (H >= T[2].H ? 2 : 1) : (H >= T[4].H ? 4 : 3);
@@ -120,7 +124,7 @@ export function zcam_from_Izazbz ({ Iz, az, bz }, viewing) {
   let hz = Math.atan2 (bz, az) * rad2deg;
   if (hz < 0) hz += 360;
   // hue composition
-  const { Hz, h_ } = hue_composition (hz);
+  const { Hz, h_ } = zcam_hue_composition (hz);
   const ez = 1.015 + Math.cos ((89.038 + h_) * deg2rad); // beware, h_ in °, but cos() takes radians
   // brightness
   const Qz  = Qmul * Iz**Qexp;
@@ -225,7 +229,7 @@ export function Izazbz_from_zcam (zcam, viewing) {
   if (has (zcam.hz))
     hz = zcam.hz;
   else if (has (zcam.Hz))
-    hz = hue_angle (zcam.Hz);
+    hz = zcam_hue_angle (zcam.Hz);
   else
     zcam_missing ("Hz OR hz");
   const h_ = hz < T[1].h ? hz + 360 : hz;
@@ -310,7 +314,7 @@ export function zcam_ensure_Hz (zcam, viewing = undefined) {
   if (isNaN (zcam.Hz)) {
     if (viewing || !zcam.viewing?.[_zcam_setup])
       zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-    const { Hz } = hue_composition (zcam.hz);
+    const { Hz } = zcam_hue_composition (zcam.hz);
     zcam.Hz = Hz;
   }
   return zcam;
@@ -321,7 +325,7 @@ export function zcam_ensure_hz (zcam, viewing = undefined) {
   if (isNaN (zcam.hz)) {
     if (viewing || !zcam.viewing?.[_zcam_setup])
       zcam.viewing = zcam_setup (viewing ? viewing : zcam.viewing ? zcam.viewing : zcam_viewing);
-    zcam.hz = hue_angle (zcam.Hz);
+    zcam.hz = zcam_hue_angle (zcam.Hz);
   }
   return zcam;
 }

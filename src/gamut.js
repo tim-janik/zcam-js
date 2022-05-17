@@ -18,7 +18,15 @@ export class Gamut {
   }
   /// Calculate ZCAM perceptual color attributes from sRGB.
   zcam (srgb) {
-    return Z.zcam_from_srgb (srgb);
+    return Z.zcam_from_srgb (srgb, this.viewing);
+  }
+  /// Create hex string from sRGB array.
+  srgb_hex (srgb) {
+    return S.srgb_hex (srgb);
+  }
+  /// Create sRGB hex string from ZCAM perceptual color attributes.
+  zcam_hex (srgb) {
+    return this.srgb_hex (Z.srgb_from_zcam (srgb, this.viewing));
   }
   /// Retrieve sRGB coordinates and assign `inside` to true if within 8bit sRGB gamut.
   contains (zcam) {
