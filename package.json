@@ -1,6 +1,6 @@
 {
   "name": "zcam-js",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MPL-2.0",
   "author": "Tim Janik",
   "bugs": "https://github.com/tim-janik/zcam-js/issues",
@@ -14,7 +14,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "import":  "./zcam-js.mjs",
+      "import": "./zcam-js.mjs",
       "require": "./zcam-js.cjs"
     }
   },
