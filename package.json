@@ -12,16 +12,21 @@
   "description": "ZCAM color appearance model in JS with related tools and utilities",
   "repository": "github:tim-janik/zcam-js.git",
   "type": "module",
-  "main": "dist.js",
+  "exports": {
+    ".": {
+      "import":  "./zcam-js.mjs",
+      "require": "./zcam-js.cjs"
+    }
+  },
   "scripts": {
     "eslint": "eslint -f unix src/*.js",
-    "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i dist.js",
+    "rollup": "rollup -c && sed -r '$s/ +\\b/\\n  /g' -i zcam-js.mjs",
     "test": "concurrently 'node src/math.js' 'node src/hashtable.js' 'node src/srgb.js' 'node src/jzazbz.js' 'node src/adaptation.js' 'node src/zcam.js' 'node src/gamut.js' "
   },
   "files": [
     "LICENSE",
-    "dist.js",
-    "dist.cjs",
+    "zcam-js.mjs",
+    "zcam-js.cjs",
     "NEWS.md",
     "README.md"
   ],

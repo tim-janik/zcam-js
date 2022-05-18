@@ -16,10 +16,10 @@ const external = ['fs', 'assert', 'perf_hooks'];
 export default [
   {
     input, treeshake, external, plugins,
-    output: {file: 'dist.js', format: 'es' },
+    output: {file: 'zcam-js.mjs', format: 'es' },
   },
   {
     input, treeshake, external, plugins,
-    output: {file: 'dist.cjs', format: 'cjs' },
+    output: {file: 'zcam-js.cjs', format: 'cjs' },
   },
 ];
