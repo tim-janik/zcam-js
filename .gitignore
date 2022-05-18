@@ -1,5 +1,5 @@
 /TODO.md
 /node_modules/
 /package-lock.json
-/dist.js
-/dist.cjs
+/zcam-js.mjs
+/zcam-js.cjs
