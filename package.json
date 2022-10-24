@@ -31,9 +31,9 @@
     "README.md"
   ],
   "devDependencies": {
-    "@rollup/plugin-replace": "^4.0.0",
-    "concurrently": "^7.0.0",
-    "eslint": "^8.14.0",
-    "rollup": "^2.70.1"
+    "@rollup/plugin-replace": "^5.0.1",
+    "concurrently": "^7.5.0",
+    "eslint": "^8.26.0",
+    "rollup": "^3.2.3"
   }
 }
