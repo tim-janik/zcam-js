@@ -4,10 +4,10 @@
 
 on:
   push:
-    tags-ignore:
-      - '**'
-    branches:
-      - 'trunk'
+    tags-ignore: ['**']
+    branches: ['trunk', 'next', 'wip/**']
+  pull_request:
+    branches: ['trunk', 'next']
 
 jobs:
   Testing:
