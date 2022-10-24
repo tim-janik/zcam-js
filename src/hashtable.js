@@ -104,7 +104,7 @@ export class Float64Table {
   delete (key) {
     // tombstone handling
     if (!key)
-      return (this.slots[this.slots.length - 1] = 0, undefined);
+      return (this.slots[this.slots.length - 1] = 0, this.vals[this.vals.length - 1] = undefined);
     const slots = this.slots;
     // find value
     let n, g = this.find_slot (key);
