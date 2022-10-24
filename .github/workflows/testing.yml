@@ -4,26 +4,26 @@
 
 on:
   push:
-    tags-ignore:
-      - '**'
-    branches:
-      - 'trunk'
+    tags-ignore: ['**']
+    branches: ['trunk', 'next', 'wip/**']
+  pull_request:
+    branches: ['trunk', 'next']
 
 jobs:
   Testing:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v3.1.0
+    - uses: actions/setup-node@v3.5.1
       with:
-        node-version: 17
+        node-version: 18
     - run: npm install
     - run: npm test
     - run: npm run rollup
     - name: Ping IRC
       if: always()
       run: |
-        S="${{ job.status }}" && URL="${{ github.event.head_commit.url }}"
-        N="$(git log -1 --format="%cL")" && B="$(git branch --show-current)"
-        MSG=$(git log -1 --format="%s")
-        .github/workflows/ircbot.py -q -j "#Anklang" -n AnklangGH -U "$N" -D "$B" -S "$S" "$MSG" "$URL"
+        S='${{ job.status }}' && URL='${{ github.event.head_commit.url }}'
+        N="$(git log -1 --format='%cL')" && B="$(git branch --show-current)"
+        MSG=$(git log -1 --format='%s')
+        .github/workflows/ircbot.py -q -j "#Anklang" -U "$N" -D "$B" -S "$S" "$MSG" "$URL"
